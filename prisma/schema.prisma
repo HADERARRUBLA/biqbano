@@ -1,0 +1,162 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── NextAuth Models ───────────────────────────────
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("bq_accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("bq_sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("bq_verification_tokens")
+}
+
+// ─── BIQBANO Models ────────────────────────────────
+
+model Tenant {
+  id          String       @id @default(cuid())
+  name        String
+  slug        String       @unique
+  createdAt   DateTime     @default(now())
+  users       User[]
+  dataSources DataSource[]
+
+  @@map("bq_tenants")
+}
+
+model User {
+  id        String    @id @default(cuid())
+  email     String    @unique
+  password  String
+  name      String
+  role      String    @default("viewer")
+  tenantId  String
+  tenant    Tenant    @relation(fields: [tenantId], references: [id])
+  createdAt DateTime  @default(now())
+  accounts  Account[]
+  sessions  Session[]
+
+  @@map("bq_users")
+}
+
+model DataSource {
+  id         String    @id @default(cuid())
+  tenantId   String
+  tenant     Tenant    @relation(fields: [tenantId], references: [id])
+  sheetUrl   String
+  sheetId    String
+  tabName    String    @default("Sheet1")
+  lastSyncAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@map("bq_data_sources")
+}
+
+model SyncLog {
+  id         String   @id @default(cuid())
+  tenantId   String
+  status     String
+  rowsSynced Int      @default(0)
+  error      String?
+  createdAt  DateTime @default(now())
+
+  @@map("bq_sync_logs")
+}
+
+model OrderRecord {
+  id        String   @id @default(cuid())
+  tenantId  String
+  rowIndex  Int
+  baseData  Json
+  extraData Json     @default("{}")
+  syncedAt  DateTime @default(now())
+  
+  // Campos indexados para búsqueda rápida
+  fecha     DateTime?
+  agente    String?
+  pdv       String?
+  tipoSolicitud String?
+  tipoPedido    String?
+  turno         String?
+  total         Float?
+
+  @@index([tenantId, fecha])
+  @@index([tenantId, agente])
+  @@index([tenantId, pdv])
+  @@unique([tenantId, rowIndex])
+  @@map("bq_order_records")
+}
+
+model Image {
+  id         String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  url        String
+  type       String
+  created_at DateTime @default(dbgenerated("timezone('utc'::text, now())")) @db.Timestamptz(6)
+
+  @@map("images")
+  @@ignore
+}
+
+model Dashboard {
+  id          String   @id @default(cuid())
+  tenantId    String
+  userId      String          // quien lo creó (admin)
+  assignedTo  String?         // userId del viewer asignado (null = solo del admin)
+  name        String
+  isDefault   Boolean  @default(false)
+  widgets     Widget[]
+  createdAt   DateTime @default(now())
+
+  @@index([tenantId, userId])
+  @@map("bq_dashboards")
+}
+
+model Widget {
+  id          String    @id @default(cuid())
+  dashboardId String
+  dashboard   Dashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+  type        String    // "kpi_total_ventas" | "kpi_total_pedidos" | "kpi_ticket_promedio"
+                        // "kpi_top_agente" | "kpi_top_pdv" | "kpi_cumplimiento"
+                        // "chart_ventas_dia" | "chart_por_agente" | "chart_por_tipo"
+                        // "chart_por_turno" | "chart_top_pdv" | "table_orders"
+  position    Int       // orden en el grid
+  config      Json      @default("{}")
+
+  @@map("bq_widgets")
+}
