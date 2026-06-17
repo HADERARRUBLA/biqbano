@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button"
 import SyncStatus from "@/components/sync/sync-status"
 import { HelpCircle, ChevronDown, ChevronUp, Save, RefreshCw } from "lucide-react"
 
+export const dynamic = 'force-dynamic'
+
 export default function SettingsPage() {
   const [sheetUrl, setSheetUrl] = useState("")
   const [tabName, setTabName] = useState("Sheet1")

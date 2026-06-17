@@ -6,6 +6,8 @@ import Filters from "@/components/dashboard/filters"
 import OrdersTable from "@/components/dashboard/orders-table"
 import { Database, Settings } from "lucide-react"
 
+export const dynamic = 'force-dynamic'
+
 export default async function OrdersPage({
   params
 }: {

@@ -17,6 +17,8 @@ import WidgetCatalog from "@/components/dashboard/widget-catalog"
 import Filters from "@/components/dashboard/filters"
 import type { WidgetItem } from "@/components/dashboard/draggable-grid"
 
+export const dynamic = 'force-dynamic'
+
 const DraggableGrid = dynamic(
   () => import("@/components/dashboard/draggable-grid"),
   { ssr: false }

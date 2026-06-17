@@ -10,6 +10,8 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Users, Shield, User as UserIcon, Loader2, CheckCircle, HelpCircle, Save } from "lucide-react"
 
+export const dynamic = 'force-dynamic'
+
 interface DashboardOption {
   id: string
   name: string

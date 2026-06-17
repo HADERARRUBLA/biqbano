@@ -6,6 +6,8 @@ import Filters from "@/components/dashboard/filters"
 import ChartsGrid from "@/components/dashboard/charts-grid"
 import { Database, Settings } from "lucide-react"
 
+export const dynamic = 'force-dynamic'
+
 export default async function AnalyticsPage({
   params
 }: {
