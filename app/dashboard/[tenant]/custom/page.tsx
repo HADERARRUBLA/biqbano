@@ -12,14 +12,14 @@ import {
 } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Pencil, Save, X, Plus, LayoutDashboard, Loader2, Trash2 } from "lucide-react"
-import dynamic from "next/dynamic"
+import dynamicImport from "next/dynamic"
 import WidgetCatalog from "@/components/dashboard/widget-catalog"
 import Filters from "@/components/dashboard/filters"
 import type { WidgetItem } from "@/components/dashboard/draggable-grid"
 
 export const dynamic = 'force-dynamic'
 
-const DraggableGrid = dynamic(
+const DraggableGrid = dynamicImport(
   () => import("@/components/dashboard/draggable-grid"),
   { ssr: false }
 )

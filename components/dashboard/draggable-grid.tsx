@@ -11,6 +11,10 @@ import dynamic from "next/dynamic"
 const KPICards = dynamic(() => import("@/components/dashboard/kpi-cards"), { ssr: false })
 const ChartsGrid = dynamic(() => import("@/components/dashboard/charts-grid"), { ssr: false })
 const OrdersTable = dynamic(() => import("@/components/dashboard/orders-table"), { ssr: false })
+const AdvancedCalendar = dynamic(() => import("@/components/dashboard/widgets/advanced-calendar"), { ssr: false })
+const AdvancedWeekday = dynamic(() => import("@/components/dashboard/widgets/advanced-weekday"), { ssr: false })
+const AdvancedParticipation = dynamic(() => import("@/components/dashboard/widgets/advanced-participation"), { ssr: false })
+const AdvancedHourly = dynamic(() => import("@/components/dashboard/widgets/advanced-hourly"), { ssr: false })
 
 export interface WidgetItem {
   id: string
@@ -43,6 +47,12 @@ function WidgetRenderer({ type }: { type: string }) {
     return <OrdersTable limit={20} />
   }
 
+  // Advanced Analytics
+  if (type === "advanced_calendar") return <AdvancedCalendar />
+  if (type === "advanced_weekday") return <AdvancedWeekday />
+  if (type === "advanced_participation") return <AdvancedParticipation />
+  if (type === "advanced_hourly") return <AdvancedHourly />
+
   return (
     <div className="flex items-center justify-center h-32 text-sm text-gray-400">
       Widget desconocido: {type}
@@ -58,6 +68,7 @@ function getWidgetMeta(type: string): WidgetDef | undefined {
 function getWidgetColSpan(type: string): string {
   if (type.startsWith("kpi_")) return "col-span-1"
   if (type === "table_orders") return "col-span-full"
+  if (type.startsWith("advanced_")) return "col-span-1 md:col-span-2"
   return "col-span-1 md:col-span-1"
 }
 
@@ -93,6 +104,7 @@ export default function DraggableGrid({ widgets, editMode, onReorder, onRemove }
     const kpis = widgets.filter((w) => w.type.startsWith("kpi_"))
     const charts = widgets.filter((w) => w.type.startsWith("chart_"))
     const tables = widgets.filter((w) => w.type === "table_orders")
+    const advanced = widgets.filter((w) => w.type.startsWith("advanced_"))
 
     return (
       <div className="space-y-6">
@@ -119,6 +131,13 @@ export default function DraggableGrid({ widgets, editMode, onReorder, onRemove }
         {charts.length > 0 && (
           <div className="grid gap-6 md:grid-cols-2">
             {charts.map((w) => (
+              <WidgetRenderer key={w.id} type={w.type} />
+            ))}
+          </div>
+        )}
+        {advanced.length > 0 && (
+          <div className="grid gap-6 md:grid-cols-2">
+            {advanced.map((w) => (
               <WidgetRenderer key={w.id} type={w.type} />
             ))}
           </div>

@@ -1,6 +1,6 @@
 "use client"
 
-import { DollarSign, Package, TrendingUp, User, Store, Award, LineChart, BarChart3, PieChart, Clock, Table } from "lucide-react"
+import { DollarSign, Package, TrendingUp, User, Store, Award, LineChart, BarChart3, PieChart, Clock, Table, CalendarDays, Grid3X3 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -8,7 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 export interface WidgetDef {
   type: string
   name: string
-  category: "kpi" | "chart" | "table"
+  category: "kpi" | "chart" | "table" | "advanced"
   icon: React.ReactNode
   color: string
   bg: string
@@ -127,12 +127,50 @@ export const WIDGET_CATALOG: WidgetDef[] = [
     bg: "bg-gray-100",
     description: "Listado detallado de pedidos",
   },
+  // ── Advanced Analytics ────────────────────────────────────────────────────
+  {
+    type: "advanced_calendar",
+    name: "Heatmap Mensual",
+    category: "advanced",
+    icon: <CalendarDays className="h-5 w-5" />,
+    color: "text-blue-600",
+    bg: "bg-blue-50",
+    description: "Actividad diaria del mes con intensidad de color",
+  },
+  {
+    type: "advanced_weekday",
+    name: "Matriz Día/Semana",
+    category: "advanced",
+    icon: <Grid3X3 className="h-5 w-5" />,
+    color: "text-indigo-600",
+    bg: "bg-indigo-50",
+    description: "Distribución de tipos por día de la semana",
+  },
+  {
+    type: "advanced_participation",
+    name: "% Participación",
+    category: "advanced",
+    icon: <PieChart className="h-5 w-5" />,
+    color: "text-purple-600",
+    bg: "bg-purple-50",
+    description: "Donut con participación por tipo de solicitud",
+  },
+  {
+    type: "advanced_hourly",
+    name: "Distribución Horaria",
+    category: "advanced",
+    icon: <Clock className="h-5 w-5" />,
+    color: "text-orange-600",
+    bg: "bg-orange-50",
+    description: "Barras apiladas por hora del día y tipo",
+  },
 ]
 
 const CATEGORY_LABEL: Record<string, string> = {
   kpi: "📊 KPIs",
   chart: "📈 Gráficas",
   table: "📋 Tabla",
+  advanced: "🔬 Analítica Avanzada",
 }
 
 interface WidgetCatalogProps {
@@ -141,7 +179,7 @@ interface WidgetCatalogProps {
 }
 
 export default function WidgetCatalog({ activeTypes, onAdd }: WidgetCatalogProps) {
-  const categories = ["kpi", "chart", "table"] as const
+  const categories = ["kpi", "chart", "table", "advanced"] as const
 
   return (
     <div className="w-72 border-l bg-gray-50 flex flex-col h-full">
