@@ -6,6 +6,15 @@ import MonthPicker from "@/components/dashboard/month-picker"
 import ViewToggle, { ViewMode } from "@/components/dashboard/view-toggle"
 import { getTipoHex } from "@/lib/tipo-colors"
 import { Grid3X3, Loader2 } from "lucide-react"
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} from "recharts"
 
 interface MatrixRow {
   tipo: string
@@ -29,12 +38,23 @@ function currentMonth() {
 
 const DAYS = ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"] as const
 const DAY_LABELS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
+// Eje X del BarChart usa labels cortas
+const DAY_CHART_DATA_KEYS = [
+  { key: "lunes",     label: "Lun" },
+  { key: "martes",    label: "Mar" },
+  { key: "miercoles", label: "Mié" },
+  { key: "jueves",    label: "Jue" },
+  { key: "viernes",   label: "Vie" },
+  { key: "sabado",    label: "Sáb" },
+  { key: "domingo",   label: "Dom" },
+]
 
+// ── Helpers para heat matrix ─────────────────────────────────────────────────
 function cellIntensity(value: number, rowMax: number): string {
-  if (rowMax === 0 || value === 0) return "rgba(243,244,246,1)" // gray-100
+  if (rowMax === 0 || value === 0) return "rgba(243,244,246,1)"
   const ratio = value / rowMax
   const alpha = 0.15 + ratio * 0.85
-  return `rgba(99,102,241,${alpha.toFixed(2)})` // indigo
+  return `rgba(99,102,241,${alpha.toFixed(2)})`
 }
 
 function textColor(value: number, rowMax: number): string {
@@ -60,12 +80,115 @@ export default function AdvancedWeekdayWidget() {
 
   useEffect(() => { load() }, [load])
 
-  // ── Chart: Heat matrix ─────────────────────────────────────────────────
+  // ── Vista: Gráfica — BarChart agrupado (top 5 tipos) ──────────────────────
   const renderChart = () => {
     if (!data?.matrix.length) return <div className="text-center text-sm text-gray-400 py-6">Sin datos</div>
 
+    // Top 5 tipos por volumen total
+    const top5 = data.matrix.slice(0, 5)
+
+    // Transformar datos: un objeto por día con valor de cada tipo
+    const chartData = DAY_CHART_DATA_KEYS.map(({ key, label }) => {
+      const entry: Record<string, number | string> = { dia: label }
+      for (const row of top5) {
+        entry[row.tipo] = row[key as keyof MatrixRow] as number
+      }
+      return entry
+    })
+
     return (
-      <div className="overflow-auto">
+      <div>
+        <ResponsiveContainer width="100%" height={230}>
+          <BarChart
+            data={chartData}
+            margin={{ top: 4, right: 4, bottom: 0, left: -22 }}
+            barCategoryGap="20%"
+            barGap={2}
+          >
+            <XAxis dataKey="dia" tick={{ fontSize: 9 }} />
+            <YAxis tick={{ fontSize: 9 }} allowDecimals={false} />
+            <Tooltip
+              contentStyle={{ fontSize: 10, padding: "4px 8px" }}
+              labelFormatter={(v) => `${v}`}
+            />
+            <Legend
+              iconType="square"
+              iconSize={7}
+              wrapperStyle={{ fontSize: 9, paddingTop: 4 }}
+            />
+            {top5.map((row) => (
+              <Bar
+                key={row.tipo}
+                dataKey={row.tipo}
+                fill={getTipoHex(row.tipo)}
+                radius={[2, 2, 0, 0]}
+                maxBarSize={18}
+              />
+            ))}
+          </BarChart>
+        </ResponsiveContainer>
+        {top5.length < data.matrix.length && (
+          <p className="text-[9px] text-gray-400 text-center mt-1">
+            Mostrando top {top5.length} tipos de {data.matrix.length} totales
+          </p>
+        )}
+      </div>
+    )
+  }
+
+  // ── Vista: Card — resumen día/tipo ────────────────────────────────────────
+  const renderCard = () => {
+    if (!data?.matrix.length) return <div className="text-center text-sm text-gray-400 py-6">Sin datos</div>
+
+    const dayTotals = DAYS.map((d) => ({
+      day: d,
+      total: data.matrix.reduce((s, r) => s + r[d], 0),
+    })).sort((a, b) => b.total - a.total)
+
+    const peakDay = dayTotals[0]
+    const slowDay = dayTotals[dayTotals.length - 1]
+
+    return (
+      <div className="space-y-3">
+        <div className="grid grid-cols-2 gap-2">
+          <div className="bg-indigo-50 rounded-lg p-2">
+            <p className="text-[10px] text-gray-500">Día más activo</p>
+            <p className="text-sm font-bold text-indigo-700 capitalize">{peakDay?.day}</p>
+            <p className="text-[10px] text-gray-500">{peakDay?.total} solicitudes</p>
+          </div>
+          <div className="bg-orange-50 rounded-lg p-2">
+            <p className="text-[10px] text-gray-500">Día más tranquilo</p>
+            <p className="text-sm font-bold text-orange-700 capitalize">{slowDay?.day}</p>
+            <p className="text-[10px] text-gray-500">{slowDay?.total} solicitudes</p>
+          </div>
+        </div>
+        <div className="space-y-1.5">
+          {data.matrix.slice(0, 4).map((row) => {
+            const peak = DAYS.reduce((b, d) => (row[d] > row[b] ? d : b), DAYS[0])
+            return (
+              <div key={row.tipo} className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-1.5">
+                  <div
+                    className="w-2 h-2 rounded-full"
+                    style={{ background: getTipoHex(row.tipo) }}
+                  />
+                  <span className="text-gray-700">{row.tipo}</span>
+                </div>
+                <span className="text-gray-400 capitalize">pico: {peak} ({row[peak]})</span>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    )
+  }
+
+  // ── Vista: Tabla — heat matrix completa ───────────────────────────────────
+  const renderTable = () => {
+    if (!data?.matrix.length) return <div className="text-center text-sm text-gray-400 py-6">Sin datos</div>
+
+    return (
+      <div className="overflow-auto max-h-72">
         <table className="w-full text-xs border-collapse">
           <thead>
             <tr>
@@ -120,100 +243,6 @@ export default function AdvancedWeekdayWidget() {
                 </tr>
               )
             })}
-          </tbody>
-        </table>
-      </div>
-    )
-  }
-
-  // ── Card: Top días y tipos ─────────────────────────────────────────────
-  const renderCard = () => {
-    if (!data?.matrix.length) return <div className="text-center text-sm text-gray-400 py-6">Sin datos</div>
-
-    // Best day per type
-    const topType = data.matrix[0]
-    const bestDay = topType
-      ? DAYS.reduce((best, d) => (topType[d] > topType[best] ? d : best), DAYS[0])
-      : null
-
-    // Totals per day across all types
-    const dayTotals = DAYS.map((d) => ({
-      day: d,
-      total: data.matrix.reduce((s, r) => s + r[d], 0),
-    })).sort((a, b) => b.total - a.total)
-
-    const peakDay = dayTotals[0]
-    const slowDay = dayTotals[dayTotals.length - 1]
-
-    return (
-      <div className="space-y-3">
-        <div className="grid grid-cols-2 gap-2">
-          <div className="bg-indigo-50 rounded-lg p-2">
-            <p className="text-[10px] text-gray-500">Día más activo</p>
-            <p className="text-sm font-bold text-indigo-700 capitalize">{peakDay?.day}</p>
-            <p className="text-[10px] text-gray-500">{peakDay?.total} solicitudes</p>
-          </div>
-          <div className="bg-orange-50 rounded-lg p-2">
-            <p className="text-[10px] text-gray-500">Día más tranquilo</p>
-            <p className="text-sm font-bold text-orange-700 capitalize">{slowDay?.day}</p>
-            <p className="text-[10px] text-gray-500">{slowDay?.total} solicitudes</p>
-          </div>
-        </div>
-        <div className="space-y-1.5">
-          {data.matrix.slice(0, 4).map((row) => {
-            const peak = DAYS.reduce((b, d) => (row[d] > row[b] ? d : b), DAYS[0])
-            return (
-              <div key={row.tipo} className="flex items-center justify-between text-xs">
-                <div className="flex items-center gap-1.5">
-                  <div
-                    className="w-2 h-2 rounded-full"
-                    style={{ background: getTipoHex(row.tipo) }}
-                  />
-                  <span className="text-gray-700">{row.tipo}</span>
-                </div>
-                <span className="text-gray-400 capitalize">pico: {peak} ({row[peak]})</span>
-              </div>
-            )
-          })}
-        </div>
-      </div>
-    )
-  }
-
-  // ── Table ──────────────────────────────────────────────────────────────
-  const renderTable = () => {
-    if (!data?.matrix.length) return <div className="text-center text-sm text-gray-400 py-6">Sin datos</div>
-
-    return (
-      <div className="overflow-auto max-h-64">
-        <table className="w-full text-xs">
-          <thead>
-            <tr className="text-gray-500 border-b">
-              <th className="text-left pb-1 font-medium">Tipo</th>
-              {DAY_LABELS.map((d) => (
-                <th key={d} className="text-center pb-1 font-medium">{d}</th>
-              ))}
-              <th className="text-right pb-1 font-medium">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.matrix.map((row) => (
-              <tr key={row.tipo} className="border-b border-gray-50 hover:bg-gray-50">
-                <td className="py-1 flex items-center gap-1.5">
-                  <div
-                    className="w-2 h-2 rounded-full flex-shrink-0"
-                    style={{ background: getTipoHex(row.tipo) }}
-                  />
-                  {row.tipo}
-                </td>
-                {DAYS.map((d) => (
-                  <td key={d} className="py-1 text-center text-gray-600">
-                    {row[d] || "-"}
-                  </td>
-                ))}
-                <td className="py-1 text-right font-bold text-gray-700">{row.total}</td>
-              </tr>
-            ))}
           </tbody>
         </table>
       </div>
