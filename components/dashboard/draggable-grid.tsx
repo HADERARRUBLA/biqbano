@@ -9,6 +9,7 @@ import dynamic from "next/dynamic"
 
 // Dynamic imports para evitar SSR issues con Recharts
 const KPICards = dynamic(() => import("@/components/dashboard/kpi-cards"), { ssr: false })
+const KpiSingle = dynamic(() => import("@/components/dashboard/widgets/kpi-single"), { ssr: false })
 const ChartsGrid = dynamic(() => import("@/components/dashboard/charts-grid"), { ssr: false })
 const OrdersTable = dynamic(() => import("@/components/dashboard/orders-table"), { ssr: false })
 const AdvancedCalendar = dynamic(() => import("@/components/dashboard/widgets/advanced-calendar"), { ssr: false })
@@ -34,7 +35,7 @@ interface DraggableGridProps {
 function WidgetRenderer({ type }: { type: string }) {
   // KPIs — renders the single stat card value inline
   if (type.startsWith("kpi_")) {
-    return <KPICards />
+    return <KpiSingle type={type} />
   }
 
   // Charts — renders the full chart grid (shows only relevant chart)
