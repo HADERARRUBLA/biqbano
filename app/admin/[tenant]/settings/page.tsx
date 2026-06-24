@@ -180,7 +180,7 @@ export default function SettingsPage() {
         {/* Formulario de Sincronización */}
         <Card>
           <CardHeader>
-            <CardTitle>Sincronización por Rango de Fechas</CardTitle>
+            <CardTitle>Sincronización Manual</CardTitle>
             <CardDescription>
               Sincroniza datos en lotes seleccionando un rango de fechas.
             </CardDescription>

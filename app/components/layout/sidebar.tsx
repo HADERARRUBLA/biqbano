@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
-import { LayoutDashboard, BarChart2, ShoppingBag, PenSquare, Users } from "lucide-react"
+import { LayoutDashboard, BarChart2, ShoppingBag, PenSquare, Users, Settings } from "lucide-react"
 
 export default function Sidebar({ tenantSlug, role }: { tenantSlug: string; role?: string }) {
   const navItems = [
@@ -40,6 +40,13 @@ export default function Sidebar({ tenantSlug, role }: { tenantSlug: string; role
               <div className="mt-4 mb-1 px-3 text-[10px] font-bold uppercase tracking-wider text-gray-400">
                 Administración
               </div>
+              <Link
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-500 hover:text-gray-900 hover:bg-gray-200/60 transition-all dark:text-gray-400 dark:hover:text-gray-50"
+                href={`/admin/${tenantSlug}/settings`}
+              >
+                <Settings className="h-4 w-4 flex-shrink-0" />
+                <span className="flex-1">Configuración</span>
+              </Link>
               <Link
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-500 hover:text-gray-900 hover:bg-gray-200/60 transition-all dark:text-gray-400 dark:hover:text-gray-50"
                 href={`/admin/${tenantSlug}/users`}
