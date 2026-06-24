@@ -21,6 +21,14 @@ export async function GET() {
       orderBy: { createdAt: "desc" }
     })
 
+    const lastCronLog = await prisma.syncLog.findFirst({
+      where: { 
+        tenantId,
+        source: "cron"
+      },
+      orderBy: { createdAt: "desc" }
+    })
+
     const recentLogs = await prisma.syncLog.findMany({
       where: { tenantId },
       orderBy: { createdAt: "desc" },
@@ -31,6 +39,7 @@ export async function GET() {
       success: true,
       dataSource,
       lastLog,
+      lastCronLog,
       recentLogs
     })
   } catch (error: any) {

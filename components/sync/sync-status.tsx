@@ -10,6 +10,7 @@ interface SyncLog {
   status: string
   rowsSynced: number
   error: string | null
+  source?: string
   createdAt: string
 }
 
@@ -24,6 +25,7 @@ interface SyncStatusData {
   success: boolean
   dataSource: DataSource | null
   lastLog: SyncLog | null
+  lastCronLog: SyncLog | null
   recentLogs: SyncLog[]
 }
 
@@ -89,10 +91,50 @@ export default function SyncStatus({ refreshTrigger }: { refreshTrigger: number 
   }
 
   const lastLog = data?.lastLog
+  const lastCronLog = data?.lastCronLog
   const isSynced = lastLog && lastLog.status === "success"
 
   return (
     <div className="space-y-6">
+      {/* Card Sincronización Automática */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">Sincronización Automática</CardTitle>
+            <Badge className="px-2.5 py-0.5 text-xs font-semibold bg-green-100 text-green-800 border-green-200" variant="outline">
+              Activa
+            </Badge>
+          </div>
+          <CardDescription>
+            Estado del Cron Job diario.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="space-y-1">
+              <span className="text-gray-500 block">Frecuencia</span>
+              <span className="font-semibold block text-gray-900">
+                Diaria (2:00 am Col)
+              </span>
+              <span className="text-xs text-gray-400 block mt-0.5">
+                (7:00 am UTC)
+              </span>
+            </div>
+            <div className="space-y-1">
+              <span className="text-gray-500 block">Último cron ejecutado</span>
+              <span className="font-semibold block text-gray-900 truncate" title={lastCronLog?.createdAt ? new Date(lastCronLog.createdAt).toLocaleString() : "Nunca"}>
+                {lastCronLog?.createdAt ? new Date(lastCronLog.createdAt).toLocaleString() : "Nunca"}
+              </span>
+              {lastCronLog?.createdAt && (
+                <span className="text-xs text-gray-400 block">
+                  ({timeAgo(lastCronLog.createdAt)} — {lastCronLog.status === "success" ? `${lastCronLog.rowsSynced} filas` : "Error"})
+                </span>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -149,6 +191,13 @@ export default function SyncStatus({ refreshTrigger }: { refreshTrigger: number 
                       <span className="font-medium">
                         {log.status === "success" ? "Exitoso" : "Fallido"}
                       </span>
+                      <Badge variant="outline" className={`text-[10px] px-1 py-0 ${
+                        log.source === "cron" 
+                          ? "bg-purple-50 text-purple-700 border-purple-200" 
+                          : "bg-gray-50 text-gray-700 border-gray-200"
+                      }`}>
+                        {log.source === "cron" ? "Automático" : "Manual"}
+                      </Badge>
                     </div>
                     {log.error && (
                       <p className="text-xs text-red-500 mt-1 bg-red-50 p-2 rounded">

@@ -94,6 +94,7 @@ model SyncLog {
   status     String
   rowsSynced Int      @default(0)
   error      String?
+  source     String   @default("manual") // "manual" | "cron"
   createdAt  DateTime @default(now())
 
   @@map("bq_sync_logs")

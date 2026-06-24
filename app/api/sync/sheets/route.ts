@@ -135,35 +135,45 @@ function buildRecord(
 
 // ── Handler principal ─────────────────────────────────────────────────────────
 export async function POST(req: Request) {
-  const session = await auth()
-
-  if (!session?.user || session.user.role !== "admin") {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 })
-  }
-
-  const tenantId = session.user.tenantId
-  const apiKey = process.env.GOOGLE_SHEETS_API_KEY
-
-  if (!apiKey) {
-    return NextResponse.json(
-      { error: "GOOGLE_SHEETS_API_KEY no está configurada" },
-      { status: 500 }
-    )
-  }
-
-  const dataSource = await prisma.dataSource.findFirst({ where: { tenantId } })
-  if (!dataSource) {
-    return NextResponse.json(
-      { error: "No se ha configurado ninguna fuente de datos" },
-      { status: 400 }
-    )
-  }
-
+  let tenantId = ""
+  let isCronMode = false
   let from = ""
   let to = ""
+  let useApiMode = true
+  let totalRowsSynced = 0
 
   try {
     const body = await req.json()
+    isCronMode = body.cronMode === true
+    const cronSecret = req.headers.get('x-cron-secret')
+    const validCron = cronSecret === process.env.CRON_SECRET
+
+    if (!isCronMode || !validCron) {
+      const session = await auth()
+      if (!session?.user || session.user.role !== "admin") {
+        return NextResponse.json({ error: "No autorizado" }, { status: 401 })
+      }
+      tenantId = session.user.tenantId
+    } else {
+      tenantId = body.tenantId
+    }
+
+    const apiKey = process.env.GOOGLE_SHEETS_API_KEY
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: "GOOGLE_SHEETS_API_KEY no está configurada" },
+        { status: 500 }
+      )
+    }
+
+    const dataSource = await prisma.dataSource.findFirst({ where: { tenantId } })
+    if (!dataSource) {
+      return NextResponse.json(
+        { error: "No se ha configurado ninguna fuente de datos" },
+        { status: 400 }
+      )
+    }
+
     from = body.from
     to = body.to
 
@@ -326,6 +336,7 @@ export async function POST(req: Request) {
         tenantId,
         status: "success",
         rowsSynced: totalRowsSynced,
+        source: isCronMode ? "cron" : "manual",
         error: `Rango: ${from} → ${to} | Método: ${useApiMode ? "Sheets API" : "CSV fallback"} | Estrategia: DELETE+createMany`,
       },
     })
@@ -343,14 +354,18 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error("Error en sincronización:", error)
 
-    await prisma.syncLog.create({
-      data: {
-        tenantId,
-        status: "error",
-        rowsSynced: 0,
-        error: `Rango: ${from} → ${to} | Error: ${error.message || "Desconocido"}`,
-      },
-    })
+    // Solo guardar el log si logramos determinar el tenantId
+    if (tenantId) {
+      await prisma.syncLog.create({
+        data: {
+          tenantId,
+          status: "error",
+          rowsSynced: 0,
+          source: isCronMode ? "cron" : "manual",
+          error: `Rango: ${from} → ${to} | Error: ${error.message || "Desconocido"}`,
+        },
+      })
+    }
 
     return NextResponse.json(
       { error: "Error al sincronizar datos", details: error.message },
