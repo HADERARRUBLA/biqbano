@@ -224,20 +224,8 @@ export default function DraggableGrid({ widgets, editMode, onReorder, onRemove, 
                           </Button>
                         </CardHeader>
 
-                        <CardContent className="p-3 text-xs text-gray-500 bg-white">
-                          <div className={`rounded-md border border-dashed border-gray-200 flex items-center justify-center ${
-                            widget.type === "table_orders" ? "h-28" : "h-20"
-                          } ${meta?.bg}`}>
-                            <div className="text-center">
-                              <span className={`${meta?.color} [&>svg]:h-6 [&>svg]:w-6 flex justify-center mb-1`}>
-                                {meta?.icon}
-                              </span>
-                              <p className="text-xs text-gray-500">{meta?.description}</p>
-                              <Badge variant="outline" className="mt-1 text-[9px] capitalize">
-                                Tamaño: {currentSize}
-                              </Badge>
-                            </div>
-                          </div>
+                        <CardContent className={widget.type.startsWith("kpi_") ? "p-0 bg-white" : "p-3 bg-white"}>
+                          <WidgetRenderer type={widget.type} />
                         </CardContent>
                       </Card>
                     </div>

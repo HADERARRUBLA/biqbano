@@ -60,9 +60,7 @@ export async function POST(req: Request) {
       userId: session.user.id,
       name,
       isDefault: count === 0,
-      widgets: withDefaults
-        ? { create: DEFAULT_WIDGETS.map(w => ({ ...w, config: {} })) }
-        : undefined,
+      widgets: undefined,
     },
     include: { widgets: { orderBy: { position: "asc" } } },
   })
