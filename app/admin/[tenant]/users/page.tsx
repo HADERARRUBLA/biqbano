@@ -8,7 +8,12 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Users, Shield, User as UserIcon, Loader2, CheckCircle, HelpCircle, Save } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle
+} from "@/components/ui/dialog"
+import { Users, Shield, User as UserIcon, Loader2, CheckCircle, HelpCircle, Save, Trash2, Plus } from "lucide-react"
 
 export const dynamic = 'force-dynamic'
 
@@ -32,16 +37,34 @@ export default function UsersAdminPage() {
   const [users, setUsers] = useState<User[]>([])
   const [dashboards, setDashboards] = useState<DashboardOption[]>([])
   const [loading, setLoading] = useState(true)
+  const [myId, setMyId] = useState<string | null>(null)
   
   // Track selected dashboardId per viewer locally before saving
   const [assignments, setAssignments] = useState<Record<string, string>>({})
   const [savingUserId, setSavingUserId] = useState<string | null>(null)
 
+  // Modal / Nuevo usuario State
+  const [isOpen, setIsOpen] = useState(false)
+  const [newName, setNewName] = useState("")
+  const [newEmail, setNewEmail] = useState("")
+  const [newPassword, setNewPassword] = useState("")
+  const [newRole, setNewRole] = useState("viewer")
+  const [creating, setCreating] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
+  const [formSuccess, setFormSuccess] = useState<string | null>(null)
+
   // ── Cargar Datos ─────────────────────────────────────────────────────────
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
-      // 1. Cargar usuarios
+      // 1. Cargar id propio
+      const meRes = await fetch("/api/admin/users/me")
+      if (meRes.ok) {
+        const meData = await meRes.json()
+        setMyId(meData.id)
+      }
+
+      // 2. Cargar usuarios
       const usersRes = await fetch("/api/admin/users")
       if (!usersRes.ok) throw new Error("Error cargando usuarios")
       const usersData: User[] = await usersRes.json()
@@ -58,7 +81,7 @@ export default function UsersAdminPage() {
       })
       setAssignments(initialAssignments)
 
-      // 2. Cargar dashboards creados por el admin
+      // 3. Cargar dashboards creados por el admin
       const dbRes = await fetch("/api/dashboard/custom")
       if (dbRes.ok) {
         const dbData: DashboardOption[] = await dbRes.json()
@@ -122,6 +145,76 @@ export default function UsersAdminPage() {
     }))
   }
 
+  // ── Crear usuario ────────────────────────────────────────────────────────
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setCreating(true)
+    setFormError(null)
+    setFormSuccess(null)
+
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newName,
+          email: newEmail,
+          password: newPassword,
+          role: newRole,
+        }),
+      })
+
+      const data = await res.json()
+      if (!res.ok) {
+        throw new Error(data.error || "Error al crear usuario")
+      }
+
+      setFormSuccess("Usuario creado exitosamente")
+      
+      // Resetear campos
+      setNewName("")
+      setNewEmail("")
+      setNewPassword("")
+      setNewRole("viewer")
+      
+      // Esperar brevemente, cerrar y recargar
+      setTimeout(() => {
+        setIsOpen(false)
+        setFormSuccess(null)
+        loadData()
+      }, 1500)
+
+    } catch (err: any) {
+      setFormError(err.message)
+    } finally {
+      setCreating(false)
+    }
+  }
+
+  // ── Eliminar usuario ──────────────────────────────────────────────────────
+  const handleDeleteUser = async (userId: string, userName: string) => {
+    if (!confirm(`¿Eliminar a ${userName}? Esta acción no se puede deshacer`)) {
+      return
+    }
+
+    try {
+      const res = await fetch(`/api/admin/users/${userId}`, {
+        method: "DELETE",
+      })
+
+      if (res.ok) {
+        alert("✅ Usuario eliminado exitosamente.")
+        loadData()
+      } else {
+        const data = await res.json()
+        alert(`❌ Error al eliminar: ${data.error || "Error desconocido"}`)
+      }
+    } catch (err) {
+      console.error(err)
+      alert("❌ Error de red al intentar eliminar.")
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64 gap-2 text-gray-500">
@@ -133,13 +226,99 @@ export default function UsersAdminPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Users className="h-6 w-6 text-blue-600" />
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">👥 Gestión de Usuarios y Roles</h1>
-          <p className="text-xs text-gray-500">Administra accesos y asigna dashboards personalizados a espectadores.</p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Users className="h-6 w-6 text-blue-600" />
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">👥 Gestión de Usuarios y Roles</h1>
+            <p className="text-xs text-gray-500">Administra accesos y asigna dashboards personalizados a espectadores.</p>
+          </div>
         </div>
+        <Button onClick={() => setIsOpen(true)} className="flex items-center gap-1">
+          <Plus className="h-4 w-4" /> Nuevo Usuario
+        </Button>
       </div>
+
+      {/* Modal Crear Usuario */}
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Crear Nuevo Usuario</DialogTitle>
+            <DialogDescription>
+              Completa los datos del nuevo usuario para registrarlo en el sistema.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleCreateUser} className="space-y-4 py-4">
+            {formError && (
+              <div className="p-3 text-xs bg-red-50 text-red-600 rounded border border-red-200">
+                {formError}
+              </div>
+            )}
+            {formSuccess && (
+              <div className="p-3 text-xs bg-green-50 text-green-600 rounded border border-green-200">
+                {formSuccess}
+              </div>
+            )}
+
+            <div className="space-y-1">
+              <Label htmlFor="newName">Nombre completo</Label>
+              <Input
+                id="newName"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                required
+                disabled={creating}
+              />
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="newEmail">Email</Label>
+              <Input
+                id="newEmail"
+                type="email"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                required
+                disabled={creating}
+              />
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="newPassword">Contraseña temporal</Label>
+              <Input
+                id="newPassword"
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+                disabled={creating}
+              />
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="newRole">Rol</Label>
+              <Select value={newRole} onValueChange={setNewRole} disabled={creating}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecciona un rol" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="viewer">Espectador</SelectItem>
+                  <SelectItem value="admin">Administrador</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <DialogFooter className="pt-2">
+              <Button type="button" variant="secondary" onClick={() => setIsOpen(false)} disabled={creating}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={creating}>
+                {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Crear usuario"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <Card className="border border-gray-200 shadow-sm">
         <CardHeader className="pb-3">
@@ -228,22 +407,34 @@ export default function UsersAdminPage() {
                         )}
                       </td>
                       <td className="py-3 px-4 text-right">
-                        {isViewer && (
-                          <Button
-                            size="sm"
-                            className="h-8 text-xs font-semibold"
-                            onClick={() => handleSaveAssignment(user.id)}
-                            disabled={savingUserId === user.id || !hasPendingChanges}
-                            variant={hasPendingChanges ? "default" : "secondary"}
-                          >
-                            {savingUserId === user.id ? (
-                              <Loader2 className="h-3 w-3 animate-spin mr-1" />
-                            ) : (
-                              <Save className="h-3 w-3 mr-1" />
-                            )}
-                            Guardar
-                          </Button>
-                        )}
+                        <div className="flex items-center justify-end gap-2">
+                          {isViewer && (
+                            <Button
+                              size="sm"
+                              className="h-8 text-xs font-semibold"
+                              onClick={() => handleSaveAssignment(user.id)}
+                              disabled={savingUserId === user.id || !hasPendingChanges}
+                              variant={hasPendingChanges ? "default" : "secondary"}
+                            >
+                              {savingUserId === user.id ? (
+                                <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                              ) : (
+                                <Save className="h-3 w-3 mr-1" />
+                              )}
+                              Guardar
+                            </Button>
+                          )}
+                          {myId !== user.id && (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8 text-gray-400 hover:text-red-500 hover:bg-red-50"
+                              onClick={() => handleDeleteUser(user.id, user.name)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   )
