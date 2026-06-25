@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import prisma from "@/lib/prisma"
+import bcrypt from "bcryptjs"
 
 // GET /api/admin/users — Retorna usuarios del tenant con sus dashboards asignados
 export async function GET() {
@@ -82,7 +83,6 @@ export async function POST(req: Request) {
     }
 
     // Hashear contraseña con bcryptjs
-    const bcrypt = require("bcryptjs")
     const hashedPassword = await bcrypt.hash(password, 10)
 
     // Crear el usuario asignándole el tenantId del administrador
