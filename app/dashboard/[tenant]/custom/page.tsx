@@ -13,7 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Pencil, Save, X, Plus, LayoutDashboard, Loader2, Trash2 } from "lucide-react"
 import dynamicImport from "next/dynamic"
-import WidgetCatalog from "@/components/dashboard/widget-catalog"
+import WidgetCatalog, { WIDGET_CATALOG } from "@/components/dashboard/widget-catalog"
 import Filters from "@/components/dashboard/filters"
 import type { WidgetItem } from "@/components/dashboard/draggable-grid"
 
@@ -118,10 +118,12 @@ export default function CustomDashboardPage() {
   // ── Agregar widget desde catálogo ────────────────────────────────────────
   const handleAddWidget = (type: string) => {
     if (userRole === "viewer") return
+    const meta = WIDGET_CATALOG.find((w: any) => w.type === type)
     const newWidget: WidgetItem = {
       id: `temp_${Date.now()}_${Math.random().toString(36).slice(2)}`,
       type,
       position: localWidgets.length,
+      config: { size: meta?.defaultSize || "1/3" },
     }
     setLocalWidgets((prev) => [...prev, newWidget])
     setDirty(true)
@@ -140,6 +142,26 @@ export default function CustomDashboardPage() {
   const handleReorder = (reordered: WidgetItem[]) => {
     if (userRole === "viewer") return
     setLocalWidgets(reordered)
+    setDirty(true)
+  }
+
+  // ── Actualizar tamaño de un widget ────────────────────────────────────────
+  const handleUpdateSize = (id: string, size: "1/3" | "1/2" | "full") => {
+    if (userRole === "viewer") return
+    setLocalWidgets((prev) =>
+      prev.map((w) => {
+        if (w.id === id) {
+          return {
+            ...w,
+            config: {
+              ...(w.config || {}),
+              size,
+            },
+          }
+        }
+        return w
+      })
+    )
     setDirty(true)
   }
 
@@ -335,6 +357,7 @@ export default function CustomDashboardPage() {
             editMode={editMode}
             onReorder={handleReorder}
             onRemove={handleRemoveWidget}
+            onUpdateSize={handleUpdateSize}
           />
         </div>
 

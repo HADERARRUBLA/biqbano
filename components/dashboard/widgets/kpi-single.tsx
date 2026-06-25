@@ -121,15 +121,15 @@ export default function KpiSingle({ type }: KpiSingleProps) {
   }
 
   return (
-    <div className="flex items-center gap-4 py-1">
-      <div className={`p-3 rounded-xl ${bg} flex-shrink-0`}>
-        <Icon className={`h-6 w-6 ${color}`} />
+    <div className="flex flex-col items-center justify-center text-center p-4">
+      <div className={`p-3 rounded-full ${bg} mb-2`}>
+        <Icon className={`h-8 w-8 ${color}`} />
       </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-xs font-medium text-gray-500 truncate">{label}</p>
-        <p className="text-xl font-bold text-gray-900 truncate" title={value}>
+      <div className="space-y-1">
+        <p className="text-2xl font-extrabold text-gray-900 tracking-tight" title={value}>
           {value}
         </p>
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{label}</p>
       </div>
     </div>
   )

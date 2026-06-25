@@ -13,6 +13,7 @@ export interface WidgetDef {
   color: string
   bg: string
   description: string
+  defaultSize: '1/3' | '1/2' | 'full'
 }
 
 export const WIDGET_CATALOG: WidgetDef[] = [
@@ -25,6 +26,7 @@ export const WIDGET_CATALOG: WidgetDef[] = [
     color: "text-green-600",
     bg: "bg-green-50",
     description: "Suma total de ventas en el período",
+    defaultSize: "1/3",
   },
   {
     type: "kpi_total_pedidos",
@@ -34,6 +36,7 @@ export const WIDGET_CATALOG: WidgetDef[] = [
     color: "text-blue-600",
     bg: "bg-blue-50",
     description: "Cantidad de pedidos sincronizados",
+    defaultSize: "1/3",
   },
   {
     type: "kpi_ticket_promedio",
@@ -43,6 +46,7 @@ export const WIDGET_CATALOG: WidgetDef[] = [
     color: "text-orange-600",
     bg: "bg-orange-50",
     description: "Valor promedio por pedido",
+    defaultSize: "1/3",
   },
   {
     type: "kpi_top_agente",
@@ -52,6 +56,7 @@ export const WIDGET_CATALOG: WidgetDef[] = [
     color: "text-purple-600",
     bg: "bg-purple-50",
     description: "Agente con mayor volumen de ventas",
+    defaultSize: "1/3",
   },
   {
     type: "kpi_top_pdv",
@@ -61,6 +66,7 @@ export const WIDGET_CATALOG: WidgetDef[] = [
     color: "text-pink-600",
     bg: "bg-pink-50",
     description: "Punto de venta con mayores ingresos",
+    defaultSize: "1/3",
   },
   {
     type: "kpi_cumplimiento",
@@ -70,6 +76,7 @@ export const WIDGET_CATALOG: WidgetDef[] = [
     color: "text-yellow-600",
     bg: "bg-yellow-50",
     description: "% de pedidos realizados antes de las 12",
+    defaultSize: "1/3",
   },
   // ── Charts ────────────────────────────────────────────────────────────────
   {
@@ -80,6 +87,7 @@ export const WIDGET_CATALOG: WidgetDef[] = [
     color: "text-blue-600",
     bg: "bg-blue-50",
     description: "Tendencia de ventas diaria",
+    defaultSize: "1/2",
   },
   {
     type: "chart_por_agente",
@@ -89,6 +97,7 @@ export const WIDGET_CATALOG: WidgetDef[] = [
     color: "text-orange-600",
     bg: "bg-orange-50",
     description: "Top 10 agentes por ventas",
+    defaultSize: "1/2",
   },
   {
     type: "chart_por_tipo",
@@ -98,6 +107,7 @@ export const WIDGET_CATALOG: WidgetDef[] = [
     color: "text-purple-600",
     bg: "bg-purple-50",
     description: "Distribución por tipo de solicitud",
+    defaultSize: "1/2",
   },
   {
     type: "chart_por_turno",
@@ -107,6 +117,7 @@ export const WIDGET_CATALOG: WidgetDef[] = [
     color: "text-indigo-600",
     bg: "bg-indigo-50",
     description: "Distribución por turno del día",
+    defaultSize: "1/2",
   },
   {
     type: "chart_top_pdv",
@@ -116,6 +127,7 @@ export const WIDGET_CATALOG: WidgetDef[] = [
     color: "text-pink-600",
     bg: "bg-pink-50",
     description: "Top 10 puntos de venta",
+    defaultSize: "1/2",
   },
   // ── Table ─────────────────────────────────────────────────────────────────
   {
@@ -126,6 +138,7 @@ export const WIDGET_CATALOG: WidgetDef[] = [
     color: "text-gray-600",
     bg: "bg-gray-100",
     description: "Listado detallado de pedidos",
+    defaultSize: "full",
   },
   // ── Advanced Analytics ────────────────────────────────────────────────────
   {
@@ -136,6 +149,7 @@ export const WIDGET_CATALOG: WidgetDef[] = [
     color: "text-blue-600",
     bg: "bg-blue-50",
     description: "Actividad diaria del mes con intensidad de color",
+    defaultSize: "full",
   },
   {
     type: "advanced_weekday",
@@ -145,6 +159,7 @@ export const WIDGET_CATALOG: WidgetDef[] = [
     color: "text-indigo-600",
     bg: "bg-indigo-50",
     description: "Distribución de tipos por día de la semana",
+    defaultSize: "full",
   },
   {
     type: "advanced_participation",
@@ -154,6 +169,7 @@ export const WIDGET_CATALOG: WidgetDef[] = [
     color: "text-purple-600",
     bg: "bg-purple-50",
     description: "Donut con participación por tipo de solicitud",
+    defaultSize: "1/2",
   },
   {
     type: "advanced_hourly",
@@ -163,6 +179,7 @@ export const WIDGET_CATALOG: WidgetDef[] = [
     color: "text-orange-600",
     bg: "bg-orange-50",
     description: "Barras apiladas por hora del día y tipo",
+    defaultSize: "full",
   },
 ]
 

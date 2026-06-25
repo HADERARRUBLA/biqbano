@@ -3,6 +3,7 @@
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { X, GripVertical } from "lucide-react"
 import { WIDGET_CATALOG, WidgetDef } from "@/components/dashboard/widget-catalog"
 import dynamic from "next/dynamic"
@@ -66,15 +67,30 @@ function getWidgetMeta(type: string): WidgetDef | undefined {
   return WIDGET_CATALOG.find((w) => w.type === type)
 }
 
-function getWidgetColSpan(type: string): string {
-  if (type.startsWith("kpi_")) return "col-span-1"
-  if (type === "table_orders") return "col-span-full"
-  if (type.startsWith("advanced_")) return "col-span-1 md:col-span-2"
-  return "col-span-1 md:col-span-1"
+function getWidgetColSpan(widget: WidgetItem): string {
+  const size = widget.config?.size
+  if (size === "1/3") return "col-span-1"
+  if (size === "1/2") return "col-span-2"
+  if (size === "full") return "col-span-3"
+
+  // Fallback a defaultSize del catálogo
+  const meta = getWidgetMeta(widget.type)
+  const defSize = meta?.defaultSize || "1/3"
+  if (defSize === "1/3") return "col-span-1"
+  if (defSize === "1/2") return "col-span-2"
+  return "col-span-3"
+}
+
+interface DraggableGridProps {
+  widgets: WidgetItem[]
+  editMode: boolean
+  onReorder: (widgets: WidgetItem[]) => void
+  onRemove: (id: string) => void
+  onUpdateSize?: (id: string, size: '1/3' | '1/2' | 'full') => void
 }
 
 // ── Main Draggable Grid ───────────────────────────────────────────────────────
-export default function DraggableGrid({ widgets, editMode, onReorder, onRemove }: DraggableGridProps) {
+export default function DraggableGrid({ widgets, editMode, onReorder, onRemove, onUpdateSize }: DraggableGridProps) {
   const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return
     if (result.destination.index === result.source.index) return
@@ -100,57 +116,36 @@ export default function DraggableGrid({ widgets, editMode, onReorder, onRemove }
     )
   }
 
-  // ── Vista normal (sin drag) ───────────────────────────────────────────────
+  // ── Vista normal (sin drag) — Renderizado en un solo grid de 3 columnas ─────
   if (!editMode) {
-    const kpis = widgets.filter((w) => w.type.startsWith("kpi_"))
-    const charts = widgets.filter((w) => w.type.startsWith("chart_"))
-    const tables = widgets.filter((w) => w.type === "table_orders")
-    const advanced = widgets.filter((w) => w.type.startsWith("advanced_"))
-
     return (
-      <div className="space-y-6">
-        {kpis.length > 0 && (
-          <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
-            {kpis.map((w) => {
-              const meta = getWidgetMeta(w.type)
-              return (
-                <Card key={w.id} className="overflow-hidden shadow-sm">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4">
-                    <CardTitle className="text-xs font-medium text-gray-500">{meta?.name}</CardTitle>
-                    <div className={`p-1.5 rounded-lg ${meta?.bg}`}>
-                      <span className={meta?.color}>{meta?.icon}</span>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="p-4 pt-0">
-                    <WidgetRenderer type={w.type} />
-                  </CardContent>
-                </Card>
-              )
-            })}
-          </div>
-        )}
-        {charts.length > 0 && (
-          <div className="grid gap-6 md:grid-cols-2">
-            {charts.map((w) => (
-              <WidgetRenderer key={w.id} type={w.type} />
-            ))}
-          </div>
-        )}
-        {advanced.length > 0 && (
-          <div className="grid gap-6 md:grid-cols-2">
-            {advanced.map((w) => (
-              <WidgetRenderer key={w.id} type={w.type} />
-            ))}
-          </div>
-        )}
-        {tables.map((w) => (
-          <WidgetRenderer key={w.id} type={w.type} />
-        ))}
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+        {widgets.map((w) => {
+          const meta = getWidgetMeta(w.type)
+          const spanClass = getWidgetColSpan(w)
+          const isKpi = w.type.startsWith("kpi_")
+          
+          return (
+            <Card key={w.id} className={`overflow-hidden shadow-sm flex flex-col justify-between ${spanClass}`}>
+              {!isKpi && (
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4">
+                  <CardTitle className="text-xs font-semibold uppercase tracking-wider text-gray-500">{meta?.name}</CardTitle>
+                  <div className={`p-1.5 rounded-lg ${meta?.bg}`}>
+                    <span className={meta?.color}>{meta?.icon}</span>
+                  </div>
+                </CardHeader>
+              )}
+              <CardContent className={isKpi ? "p-0" : "p-4 pt-0"}>
+                <WidgetRenderer type={w.type} />
+              </CardContent>
+            </Card>
+          )
+        })}
       </div>
     )
   }
 
-  // ── Modo edición con drag & drop ─────────────────────────────────────────
+  // ── Modo edición con drag & drop y controles de tamaño ───────────────────────
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
       <Droppable droppableId="dashboard-grid">
@@ -162,6 +157,9 @@ export default function DraggableGrid({ widgets, editMode, onReorder, onRemove }
           >
             {widgets.map((widget, index) => {
               const meta = getWidgetMeta(widget.type)
+              const spanClass = getWidgetColSpan(widget)
+              const currentSize = widget.config?.size || meta?.defaultSize || "1/3"
+
               return (
                 <Draggable key={widget.id} draggableId={widget.id} index={index}>
                   {(draggableProvided, snapshot) => (
@@ -169,7 +167,7 @@ export default function DraggableGrid({ widgets, editMode, onReorder, onRemove }
                       ref={draggableProvided.innerRef}
                       {...draggableProvided.draggableProps}
                       style={draggableProvided.draggableProps.style as React.CSSProperties}
-                      className={`${widget.type === "table_orders" ? "col-span-full" : ""}`}
+                      className={spanClass}
                     >
                       <Card
                         className={`overflow-hidden shadow-sm border-2 transition-all ${
@@ -191,9 +189,29 @@ export default function DraggableGrid({ widgets, editMode, onReorder, onRemove }
                             <span className={`${meta?.color} [&>svg]:h-3.5 [&>svg]:w-3.5`}>{meta?.icon}</span>
                           </div>
 
-                          <CardTitle className="text-xs font-medium text-gray-700 flex-1 truncate">
+                          <CardTitle className="text-xs font-semibold text-gray-700 flex-1 truncate">
                             {meta?.name || widget.type}
                           </CardTitle>
+
+                          {/* Size selectors */}
+                          {onUpdateSize && (
+                            <div className="flex items-center bg-gray-100 rounded-md p-0.5 mr-1">
+                              {(["1/3", "1/2", "full"] as const).map((sz) => (
+                                <button
+                                  key={sz}
+                                  type="button"
+                                  onClick={() => onUpdateSize(widget.id, sz)}
+                                  className={`text-[9px] font-bold px-1.5 py-0.5 rounded transition-all ${
+                                    currentSize === sz
+                                      ? "bg-white text-blue-600 shadow-sm"
+                                      : "text-gray-400 hover:text-gray-600"
+                                  }`}
+                                >
+                                  {sz === "1/3" ? "1/3" : sz === "1/2" ? "1/2" : "Full"}
+                                </button>
+                              ))}
+                            </div>
+                          )}
 
                           {/* Remove button */}
                           <Button
@@ -208,13 +226,16 @@ export default function DraggableGrid({ widgets, editMode, onReorder, onRemove }
 
                         <CardContent className="p-3 text-xs text-gray-500 bg-white">
                           <div className={`rounded-md border border-dashed border-gray-200 flex items-center justify-center ${
-                            widget.type === "table_orders" ? "h-24" : "h-20"
+                            widget.type === "table_orders" ? "h-28" : "h-20"
                           } ${meta?.bg}`}>
                             <div className="text-center">
                               <span className={`${meta?.color} [&>svg]:h-6 [&>svg]:w-6 flex justify-center mb-1`}>
                                 {meta?.icon}
                               </span>
                               <p className="text-xs text-gray-500">{meta?.description}</p>
+                              <Badge variant="outline" className="mt-1 text-[9px] capitalize">
+                                Tamaño: {currentSize}
+                              </Badge>
                             </div>
                           </div>
                         </CardContent>
