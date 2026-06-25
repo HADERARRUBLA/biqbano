@@ -9,7 +9,8 @@ export default auth((req: any) => {
 
   if (isAuthRoute) {
     if (isLoggedIn) {
-      return NextResponse.redirect(new URL(`/dashboard/${req.auth?.user.tenantSlug}/overview`, req.nextUrl))
+      const defaultPage = req.auth?.user.role === "admin" ? "overview" : "custom"
+      return NextResponse.redirect(new URL(`/dashboard/${req.auth?.user.tenantSlug}/${defaultPage}`, req.nextUrl))
     }
     return NextResponse.next()
   }
@@ -18,8 +19,22 @@ export default auth((req: any) => {
     return NextResponse.redirect(new URL("/login", req.nextUrl))
   }
 
-  if (isAdminRoute && req.auth?.user.role !== "admin") {
-    return NextResponse.redirect(new URL(`/dashboard/${req.auth?.user.tenantSlug}/overview`, req.nextUrl))
+  if (isLoggedIn && req.auth?.user.role !== "admin") {
+    // Proteger rutas de administración
+    if (isAdminRoute) {
+      return NextResponse.redirect(new URL(`/dashboard/${req.auth?.user.tenantSlug}/custom`, req.nextUrl))
+    }
+    
+    // Proteger vistas específicas de dashboard para viewers
+    const path = req.nextUrl.pathname
+    const tenantSlug = req.auth?.user.tenantSlug
+    if (
+      path.startsWith(`/dashboard/${tenantSlug}/overview`) ||
+      path.startsWith(`/dashboard/${tenantSlug}/orders`) ||
+      path.startsWith(`/dashboard/${tenantSlug}/analytics`)
+    ) {
+      return NextResponse.redirect(new URL(`/dashboard/${tenantSlug}/custom`, req.nextUrl))
+    }
   }
 
   return NextResponse.next()

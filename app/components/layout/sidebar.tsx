@@ -3,17 +3,25 @@ import { Badge } from "@/components/ui/badge"
 import { LayoutDashboard, BarChart2, ShoppingBag, PenSquare, Users, Settings } from "lucide-react"
 
 export default function Sidebar({ tenantSlug, role }: { tenantSlug: string; role?: string }) {
-  const navItems = [
+  const allNavItems = [
     { href: `/dashboard/${tenantSlug}/overview`,  label: "Overview",       icon: LayoutDashboard },
     { href: `/dashboard/${tenantSlug}/orders`,    label: "Pedidos",         icon: ShoppingBag },
     { href: `/dashboard/${tenantSlug}/analytics`, label: "Analíticas",      icon: BarChart2 },
     { href: `/dashboard/${tenantSlug}/custom`,    label: "Mi Dashboard",    icon: PenSquare, badge: "Nuevo" },
   ]
 
+  // ROL VIEWER ve SOLO "Mi Dashboard"
+  const navItems = role === "admin" 
+    ? allNavItems 
+    : allNavItems.filter(item => item.href.endsWith("/custom"))
+
   return (
     <div className="flex h-full max-h-screen flex-col gap-2 border-r bg-gray-100/40 dark:bg-gray-800/40">
       <div className="flex h-14 items-center border-b px-6">
-        <Link className="flex items-center gap-2 font-semibold" href={`/dashboard/${tenantSlug}/overview`}>
+        <Link 
+          className="flex items-center gap-2 font-semibold" 
+          href={role === "admin" ? `/dashboard/${tenantSlug}/overview` : `/dashboard/${tenantSlug}/custom`}
+        >
           <span className="text-blue-600 font-bold tracking-tight">biqbano</span>
         </Link>
       </div>
