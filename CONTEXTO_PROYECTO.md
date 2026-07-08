@@ -5,16 +5,42 @@
 - Fase 2: ✅ COMPLETADA — Google Sheets → PostgreSQL
 - Fase 3: ✅ COMPLETADA — Dashboard Core (KPIs + Gráficas + Filtros)
 - Consolidación: ✅ COMPLETADA — API Key real + Sync optimizada
-- Fase 4: 🔄 EN PROGRESO — Exportaciones + Dashboard Personalizable
-- Fase 5: ⏳ PENDIENTE — Múltiples fuentes + Pulido final
+- Fase 4: ✅ COMPLETADA — Exportaciones + Dashboard Personalizable
+- Fase 5: ✅ COMPLETADA — Control de acceso por rol
+- Fase 6: ✅ COMPLETADA — 4 widgets analíticos avanzados
+- Fase 7: ✅ COMPLETADA — Cron sync automática 2am
+- Fase 8: ✅ COMPLETADA — Gestión de usuarios desde UI
+- Fase 9: 🔄 EN PROGRESO — Filtros configurables por usuario
+
+## Producción
+- URL: https://biqbano.vercel.app
+- GitHub: https://github.com/HADERARRUBLA/biqbano
+- BD: Supabase proyecto SitiosWEB
+- Cron: diario 7:00 UTC (2:00am Colombia), últimos 7 días
+
+## Reglas de desarrollo (NO romper)
+- NUNCA usar require() — solo import ES modules
+- SIEMPRE export const dynamic = 'force-dynamic' en páginas
+- NUNCA hacer git push — solo git add + git commit
+- SIEMPRE npx tsc --noEmit antes del commit
+- Sync usa deleteMany por rango + createMany con skipDuplicates
+- Conexión BD: pooler puerto 5432, NO puerto 6543
+- prisma db push (NO prisma migrate dev)
+
+## Widgets avanzados funcionando
+- Calendario de calor: valores en COP, barras por tipo, 
+  defaults: Venta/Sin Respuesta/Información/PQR
+- Distribución horaria: AM/PM corregido, rango 10-22h
+- Matriz días/semana: heat map + BarChart agrupado
+- % Participación: Donut + tabla + card
 
 ## Stack
 - Next.js 14 + TypeScript
 - Prisma ORM + PostgreSQL (Supabase)
 - NextAuth.js v5
-- Shadcn/ui + Tailwind
-- googleapis (Sheets API v4)
-- recharts + date-fns
+- Shadcn/ui + Recharts + Tailwind CSS
+- @hello-pangea/dnd (drag & drop)
+- xlsx + jspdf (exportaciones)
 
 ## Base de datos (Supabase - proyecto SitiosWEB)
 - Prefijo de tablas: bq_
