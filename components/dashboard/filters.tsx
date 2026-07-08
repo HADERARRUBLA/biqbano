@@ -114,32 +114,26 @@ export default function Filters({ filterConfig, isAdmin = false }: FiltersProps)
         {showFilter("desde") && (
           <div className="space-y-1">
             <Label htmlFor="from" className="text-xs">Desde</Label>
-            <div className="relative">
-              <Input
-                id="from"
-                type="date"
-                value={from}
-                onChange={(e) => setFrom(e.target.value)}
-                className="text-xs h-9 pl-8"
-              />
-              <Calendar className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400 pointer-events-none" />
-            </div>
+            <input
+              id="from"
+              type="date"
+              value={from}
+              onChange={(e) => setFrom(e.target.value)}
+              className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            />
           </div>
         )}
 
         {showFilter("hasta") && (
           <div className="space-y-1">
             <Label htmlFor="to" className="text-xs">Hasta</Label>
-            <div className="relative">
-              <Input
-                id="to"
-                type="date"
-                value={to}
-                onChange={(e) => setTo(e.target.value)}
-                className="text-xs h-9 pl-8"
-              />
-              <Calendar className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400 pointer-events-none" />
-            </div>
+            <input
+              id="to"
+              type="date"
+              value={to}
+              onChange={(e) => setTo(e.target.value)}
+              className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            />
           </div>
         )}
 
