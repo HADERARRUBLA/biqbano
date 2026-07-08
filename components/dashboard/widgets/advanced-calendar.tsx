@@ -24,6 +24,18 @@ function currentMonth() {
   return new Date().toISOString().slice(0, 7)
 }
 
+function formatCurrencyAbbreviated(value: number): string {
+  if (value < 1000000) {
+    return `$${value.toLocaleString("es-CO", { maximumFractionDigits: 0 })}`
+  }
+  if (value < 1000000000) {
+    const v = value / 1000000
+    return `$${v.toLocaleString("es-CO", { maximumFractionDigits: 1 })}M`
+  }
+  const v = value / 1000000000
+  return `$${v.toLocaleString("es-CO", { maximumFractionDigits: 1 })}B`
+}
+
 // ── Intensidad de color ──────────────────────────────────────────────────────
 function intensityBg(value: number, max: number): string {
   if (max === 0 || value === 0) return "bg-gray-100"
@@ -150,7 +162,7 @@ export default function AdvancedCalendarWidget() {
   const [selectedTipos, setSelectedTipos] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
 
-  // Carga inicial (sin filtro de tipos — para obtener tiposDisponibles)
+  // Carga inicial
   const loadAll = useCallback(async () => {
     setLoading(true)
     try {
@@ -158,8 +170,35 @@ export default function AdvancedCalendarWidget() {
       if (res.ok) {
         const data: CalendarData = await res.json()
         setAllData(data)
-        setSelectedTipos(data.tiposDisponibles)  // todos por defecto
-        setFilteredData(data)
+        
+        let initialTipos = ["Venta", "Sin Respuesta", "Información", "PQR"]
+        if (typeof window !== "undefined") {
+          try {
+            const stored = localStorage.getItem("biqbano_calendar_tipos")
+            if (stored) {
+               const parsed = JSON.parse(stored)
+               if (Array.isArray(parsed) && parsed.length > 0) {
+                  initialTipos = parsed
+               }
+            }
+          } catch (e) {}
+        }
+        
+        setSelectedTipos(initialTipos)
+        
+        // Si no se seleccionan todos, hacer fetch inicial filtrado
+        if (initialTipos.length > 0 && initialTipos.length !== data.tiposDisponibles.length) {
+          const q = initialTipos.map(encodeURIComponent).join(",")
+          const res2 = await fetch(`/api/dashboard/advanced/calendar?month=${month}&tipos=${q}`)
+          if (res2.ok) {
+            const fData: CalendarData = await res2.json()
+            setFilteredData({ ...fData, tiposDisponibles: data.tiposDisponibles })
+          } else {
+            setFilteredData(data)
+          }
+        } else {
+          setFilteredData(data)
+        }
       }
     } finally {
       setLoading(false)
@@ -197,6 +236,11 @@ export default function AdvancedCalendarWidget() {
 
   const handleTipoChange = (sel: string[]) => {
     setSelectedTipos(sel)
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("biqbano_calendar_tipos", JSON.stringify(sel))
+      } catch (e) {}
+    }
     applyFilter(sel)
   }
 
@@ -223,6 +267,12 @@ export default function AdvancedCalendarWidget() {
   const renderChart = () => {
     if (!data) return null
     const { weeks, maxVal } = buildGrid(data.calendar)
+    
+    // Max count for proportional bars
+    const maxCountMonth = Math.max(
+      ...data.calendar.map(d => Math.max(...Object.values(d.porTipo), 0)),
+      1
+    )
     return (
       <div>
         <div className="grid grid-cols-7 gap-1 mb-1">
@@ -236,24 +286,43 @@ export default function AdvancedCalendarWidget() {
           <div key={wi} className="grid grid-cols-7 gap-1 mb-1">
             {Array.from({ length: 7 }, (_, di) => {
               const cell = week[di] ?? null
-              if (!cell) return <div key={di} className="aspect-square" />
+              if (!cell) return <div key={di} className="min-h-[80px]" />
               return (
                 <div
                   key={cell.dia}
-                  className={`aspect-square rounded flex flex-col items-center justify-center cursor-default transition-all group relative ${intensityBg(cell.total, maxVal)}`}
+                  className={`min-h-[80px] h-full w-full rounded flex flex-col items-center justify-start p-1 cursor-default transition-all group relative ${intensityBg(cell.total, maxVal)}`}
                   title={`${cell.fecha}: $${cell.total.toLocaleString("es-CO")}`}
                 >
                   <span className={`text-[10px] font-bold leading-none ${intensityText(cell.total, maxVal)}`}>
                     {cell.dia}
                   </span>
                   {cell.total > 0 && (
-                    <span className={`text-[8px] leading-none mt-0.5 ${intensityText(cell.total, maxVal)}`}>
-                      {cell.total >= 1000
-                        ? `${(cell.total / 1000).toFixed(0)}k`
-                        : cell.total.toFixed(0)}
+                    <span className={`text-[9px] font-medium leading-none mt-1 ${intensityText(cell.total, maxVal)}`}>
+                      {formatCurrencyAbbreviated(cell.total)}
                     </span>
                   )}
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block z-10 bg-gray-900 text-white text-[10px] rounded px-2 py-1 whitespace-nowrap shadow-lg pointer-events-none">
+                  
+                  {cell.total > 0 && selectedTipos.length > 0 && (
+                    <div className="flex flex-col w-full mt-2 gap-1 px-0.5">
+                      {selectedTipos.map(tipo => {
+                        const val = cell.porTipo[tipo] || 0
+                        if (val === 0) return null
+                        return (
+                          <div key={tipo} className="w-full flex flex-col">
+                            <div className="flex justify-between items-center text-[7px] leading-none mb-[2px]">
+                              <span className={`truncate max-w-[70%] font-medium ${intensityText(cell.total, maxVal)}`}>{tipo}</span>
+                              <span className={`font-bold ${intensityText(cell.total, maxVal)}`}>{val}</span>
+                            </div>
+                            <div className="w-full bg-black/10 rounded-full h-1 overflow-hidden">
+                              <div className="h-full rounded-full" style={{ width: `${(val / maxCountMonth) * 100}%`, backgroundColor: getTipoHex(tipo) }} />
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block z-20 bg-gray-900 text-white text-[10px] rounded px-2 py-1 whitespace-nowrap shadow-lg pointer-events-none">
                     <p className="font-semibold">{cell.diaSemana} {cell.dia}</p>
                     <p>${cell.total.toLocaleString("es-CO", { maximumFractionDigits: 0 })}</p>
                     {Object.entries(cell.porTipo).slice(0, 3).map(([t, v]) => (
