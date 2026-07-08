@@ -16,14 +16,29 @@ export async function GET(req: Request) {
     const [year, monthNum] = month.split("-").map(Number)
     const from = new Date(year, monthNum - 1, 1)
     const to = new Date(year, monthNum, 0, 23, 59, 59)
+    
+    // Filtros globales
+    const agente = searchParams.get("agente")
+    const pdv = searchParams.get("pdv")
+    const tipoSolicitud = searchParams.get("tipoSolicitud")
+    const tipoPedido = searchParams.get("tipoPedido")
+    const turno = searchParams.get("turno")
+
+    const where: any = {
+      tenantId,
+      fecha: { gte: from, lte: to },
+      tipoSolicitud: { not: null },
+    }
+    
+    if (agente) where.agente = agente
+    if (pdv) where.pdv = pdv
+    if (tipoSolicitud) where.tipoSolicitud = tipoSolicitud
+    if (tipoPedido) where.tipoPedido = tipoPedido
+    if (turno) where.turno = turno
 
     // Traer fecha + tipoSolicitud de todos los registros del mes
     const records = await prisma.orderRecord.findMany({
-      where: {
-        tenantId,
-        fecha: { gte: from, lte: to },
-        tipoSolicitud: { not: null },
-      },
+      where,
       select: { fecha: true, tipoSolicitud: true },
     })
 

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { useSearchParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import MonthPicker from "@/components/dashboard/month-picker"
 import ViewToggle, { ViewMode } from "@/components/dashboard/view-toggle"
@@ -35,16 +36,22 @@ export default function AdvancedParticipationWidget() {
   const [viewMode, setViewMode] = useState<ViewMode>("chart")
   const [data, setData] = useState<ParticipationData | null>(null)
   const [loading, setLoading] = useState(false)
+  const searchParams = useSearchParams()
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/dashboard/advanced/participation?month=${month}`)
+      const params = new URLSearchParams(searchParams?.toString() || "")
+      params.set("month", month)
+      params.delete("from")
+      params.delete("to")
+
+      const res = await fetch(`/api/dashboard/advanced/participation?${params.toString()}`)
       if (res.ok) setData(await res.json())
     } finally {
       setLoading(false)
     }
-  }, [month])
+  }, [month, searchParams])
 
   useEffect(() => { load() }, [load])
 

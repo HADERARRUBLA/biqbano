@@ -142,6 +142,7 @@ model Dashboard {
   name        String
   isDefault   Boolean  @default(false)
   widgets     Widget[]
+  filterConfig Json    @default("{}")
   createdAt   DateTime @default(now())
 
   @@index([tenantId, userId])

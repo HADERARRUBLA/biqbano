@@ -15,6 +15,13 @@ export async function GET(req: Request) {
     // month = "2026-01"
     const month = searchParams.get("month") || new Date().toISOString().slice(0, 7)
     const tiposParam = searchParams.get("tipos") // CSV: "Venta,Sin Respuesta"
+    
+    // Filtros globales
+    const agente = searchParams.get("agente")
+    const pdv = searchParams.get("pdv")
+    const tipoSolicitud = searchParams.get("tipoSolicitud")
+    const tipoPedido = searchParams.get("tipoPedido")
+    const turno = searchParams.get("turno")
 
     const [year, monthNum] = month.split("-").map(Number)
     const from = new Date(year, monthNum - 1, 1)
@@ -25,7 +32,14 @@ export async function GET(req: Request) {
       fecha: { gte: from, lte: to },
     }
 
-    if (tiposParam) {
+    if (agente) where.agente = agente
+    if (pdv) where.pdv = pdv
+    if (tipoPedido) where.tipoPedido = tipoPedido
+    if (turno) where.turno = turno
+
+    if (tipoSolicitud) {
+      where.tipoSolicitud = tipoSolicitud
+    } else if (tiposParam) {
       const tipos = tiposParam.split(",").map((t) => t.trim()).filter(Boolean)
       if (tipos.length > 0) {
         where.tipoSolicitud = { in: tipos }
@@ -38,12 +52,14 @@ export async function GET(req: Request) {
       select: { fecha: true, tipoSolicitud: true, total: true },
     })
 
-    // Obtener todos los tipos disponibles en el mes (sin filtro de tipo)
+    // Obtener todos los tipos disponibles en el mes (sin filtro de tipo específico para la lista)
+    const tiposWhere = { ...where }
+    delete tiposWhere.tipoSolicitud // No restringir la lista por el filtro de tipo
+
     const allTiposRaw = await prisma.orderRecord.groupBy({
       by: ["tipoSolicitud"],
       where: {
-        tenantId,
-        fecha: { gte: from, lte: to },
+        ...tiposWhere,
         tipoSolicitud: { not: null },
       },
       _count: { id: true },

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { useSearchParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import MonthPicker from "@/components/dashboard/month-picker"
 import ViewToggle, { ViewMode } from "@/components/dashboard/view-toggle"
@@ -126,11 +127,17 @@ export default function AdvancedHourlyWidget() {
   const [data, setData] = useState<HourlyData | null>(null)
   const [selectedTipos, setSelectedTipos] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
+  const searchParams = useSearchParams()
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/dashboard/advanced/hourly?month=${month}`)
+      const params = new URLSearchParams(searchParams?.toString() || "")
+      params.set("month", month)
+      params.delete("from")
+      params.delete("to")
+
+      const res = await fetch(`/api/dashboard/advanced/hourly?${params.toString()}`)
       if (res.ok) {
         const d: HourlyData = await res.json()
         setData(d)
@@ -139,7 +146,7 @@ export default function AdvancedHourlyWidget() {
     } finally {
       setLoading(false)
     }
-  }, [month])
+  }, [month, searchParams])
 
   useEffect(() => { load() }, [load])
 

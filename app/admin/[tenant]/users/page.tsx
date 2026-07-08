@@ -13,7 +13,8 @@ import { Label } from "@/components/ui/label"
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle
 } from "@/components/ui/dialog"
-import { Users, Shield, User as UserIcon, Loader2, CheckCircle, HelpCircle, Save, Trash2, Plus } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Users, Shield, User as UserIcon, Loader2, CheckCircle, HelpCircle, Save, Trash2, Plus, Settings } from "lucide-react"
 
 export const dynamic = 'force-dynamic'
 
@@ -52,6 +53,12 @@ export default function UsersAdminPage() {
   const [creating, setCreating] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [formSuccess, setFormSuccess] = useState<string | null>(null)
+
+  // Modal Filtros
+  const [filterModalOpen, setFilterModalOpen] = useState(false)
+  const [selectedFilterUser, setSelectedFilterUser] = useState<User | null>(null)
+  const [filterConfig, setFilterConfig] = useState<Record<string, boolean>>({})
+  const [savingFilters, setSavingFilters] = useState(false)
 
   // ── Cargar Datos ─────────────────────────────────────────────────────────
   const loadData = useCallback(async () => {
@@ -215,6 +222,53 @@ export default function UsersAdminPage() {
     }
   }
 
+  // ── Configurar Filtros ───────────────────────────────────────────────────
+  const handleOpenFilterModal = async (user: User) => {
+    setSelectedFilterUser(user)
+    setFilterConfig({
+      desde: true, hasta: true, agente: true, pdv: true,
+      tipoSolicitud: true, tipoPedido: true, turno: true
+    })
+    
+    // Podríamos cargar la configuración actual desde el usuario si viniera en la API,
+    // por ahora usaremos default true o lo podemos cargar de la API al abrir.
+    try {
+      const res = await fetch(`/api/admin/users/${user.id}/filter-config`)
+      if (res.ok) {
+        const data = await res.json()
+        if (data.filterConfig) {
+          setFilterConfig(data.filterConfig)
+        }
+      }
+    } catch (e) {}
+
+    setFilterModalOpen(true)
+  }
+
+  const handleSaveFilters = async () => {
+    if (!selectedFilterUser) return
+    setSavingFilters(true)
+    try {
+      const res = await fetch(`/api/admin/users/${selectedFilterUser.id}/filter-config`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filterConfig }),
+      })
+      if (res.ok) {
+        setFilterModalOpen(false)
+        alert("✅ Configuración de filtros guardada.")
+      } else {
+        const data = await res.json()
+        alert(`❌ Error: ${data.error}`)
+      }
+    } catch (err) {
+      console.error(err)
+      alert("❌ Error al guardar filtros.")
+    } finally {
+      setSavingFilters(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64 gap-2 text-gray-500">
@@ -320,6 +374,54 @@ export default function UsersAdminPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Modal Configurar Filtros */}
+      <Dialog open={filterModalOpen} onOpenChange={setFilterModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Configurar filtros para {selectedFilterUser?.name}</DialogTitle>
+            <DialogDescription>
+              Selecciona qué filtros estarán visibles en el dashboard de este usuario.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {[
+              { id: "desde", label: "Fecha Desde" },
+              { id: "hasta", label: "Fecha Hasta" },
+              { id: "agente", label: "Agente" },
+              { id: "pdv", label: "PDV" },
+              { id: "tipoSolicitud", label: "Tipo de Solicitud" },
+              { id: "tipoPedido", label: "Tipo de Pedido" },
+              { id: "turno", label: "Turno" },
+            ].map((f) => (
+              <div key={f.id} className="flex items-center space-x-2">
+                <Checkbox
+                  id={`filter-${f.id}`}
+                  checked={filterConfig[f.id] ?? true}
+                  onCheckedChange={(checked: boolean | "indeterminate") => 
+                    setFilterConfig(prev => ({ ...prev, [f.id]: !!checked }))
+                  }
+                />
+                <label
+                  htmlFor={`filter-${f.id}`}
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  {f.label}
+                </label>
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => setFilterModalOpen(false)} disabled={savingFilters}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSaveFilters} disabled={savingFilters}>
+              {savingFilters ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Save className="h-4 w-4 mr-1" />}
+              Guardar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Card className="border border-gray-200 shadow-sm">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-semibold text-gray-800">Usuarios en la empresa</CardTitle>
@@ -408,6 +510,16 @@ export default function UsersAdminPage() {
                       </td>
                       <td className="py-3 px-4 text-right">
                         <div className="flex items-center justify-end gap-2">
+                          {isViewer && hasAssigned && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-8 text-xs text-gray-600 border-gray-300"
+                              onClick={() => handleOpenFilterModal(user)}
+                            >
+                              <Settings className="h-3 w-3 mr-1" /> Filtros
+                            </Button>
+                          )}
                           {isViewer && (
                             <Button
                               size="sm"

@@ -14,10 +14,22 @@ interface FilterOptions {
   tiposPedido: string[]
 }
 
-export default function Filters() {
+interface FiltersProps {
+  filterConfig?: Record<string, boolean>
+  isAdmin?: boolean
+}
+
+export default function Filters({ filterConfig, isAdmin = false }: FiltersProps) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+
+  // Determinar si un filtro debe mostrarse
+  const showFilter = (key: string) => {
+    if (isAdmin) return true
+    if (!filterConfig || Object.keys(filterConfig).length === 0) return true
+    return filterConfig[key] === true
+  }
 
   const [options, setOptions] = useState<FilterOptions>({
     agentes: [],
@@ -99,113 +111,127 @@ export default function Filters() {
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4">
         {/* Rango de Fechas */}
-        <div className="space-y-1">
-          <Label htmlFor="from" className="text-xs">Desde</Label>
-          <div className="relative">
-            <Input
-              id="from"
-              type="date"
-              value={from}
-              onChange={(e) => setFrom(e.target.value)}
-              className="text-xs h-9 pl-8"
-            />
-            <Calendar className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400 pointer-events-none" />
+        {showFilter("desde") && (
+          <div className="space-y-1">
+            <Label htmlFor="from" className="text-xs">Desde</Label>
+            <div className="relative">
+              <Input
+                id="from"
+                type="date"
+                value={from}
+                onChange={(e) => setFrom(e.target.value)}
+                className="text-xs h-9 pl-8"
+              />
+              <Calendar className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400 pointer-events-none" />
+            </div>
           </div>
-        </div>
+        )}
 
-        <div className="space-y-1">
-          <Label htmlFor="to" className="text-xs">Hasta</Label>
-          <div className="relative">
-            <Input
-              id="to"
-              type="date"
-              value={to}
-              onChange={(e) => setTo(e.target.value)}
-              className="text-xs h-9 pl-8"
-            />
-            <Calendar className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400 pointer-events-none" />
+        {showFilter("hasta") && (
+          <div className="space-y-1">
+            <Label htmlFor="to" className="text-xs">Hasta</Label>
+            <div className="relative">
+              <Input
+                id="to"
+                type="date"
+                value={to}
+                onChange={(e) => setTo(e.target.value)}
+                className="text-xs h-9 pl-8"
+              />
+              <Calendar className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400 pointer-events-none" />
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Agente */}
-        <div className="space-y-1">
-          <Label htmlFor="agente" className="text-xs">Agente</Label>
-          <select
-            id="agente"
-            value={agente}
-            onChange={(e) => setAgente(e.target.value)}
-            className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          >
-            <option value="">Todos</option>
-            {options.agentes.map((opt) => (
-              <option key={opt} value={opt}>{opt}</option>
-            ))}
-          </select>
-        </div>
+        {showFilter("agente") && (
+          <div className="space-y-1">
+            <Label htmlFor="agente" className="text-xs">Agente</Label>
+            <select
+              id="agente"
+              value={agente}
+              onChange={(e) => setAgente(e.target.value)}
+              className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            >
+              <option value="">Todos</option>
+              {options.agentes.map((opt) => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {/* PDV */}
-        <div className="space-y-1">
-          <Label htmlFor="pdv" className="text-xs">PDV</Label>
-          <select
-            id="pdv"
-            value={pdv}
-            onChange={(e) => setPdv(e.target.value)}
-            className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          >
-            <option value="">Todos</option>
-            {options.pdvs.map((opt) => (
-              <option key={opt} value={opt}>{opt}</option>
-            ))}
-          </select>
-        </div>
+        {showFilter("pdv") && (
+          <div className="space-y-1">
+            <Label htmlFor="pdv" className="text-xs">PDV</Label>
+            <select
+              id="pdv"
+              value={pdv}
+              onChange={(e) => setPdv(e.target.value)}
+              className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            >
+              <option value="">Todos</option>
+              {options.pdvs.map((opt) => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {/* Tipo de Solicitud */}
-        <div className="space-y-1">
-          <Label htmlFor="tipoSolicitud" className="text-xs">Tipo Solicitud</Label>
-          <select
-            id="tipoSolicitud"
-            value={tipoSolicitud}
-            onChange={(e) => setTipoSolicitud(e.target.value)}
-            className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          >
-            <option value="">Todos</option>
-            {options.tiposSolicitud.map((opt) => (
-              <option key={opt} value={opt}>{opt}</option>
-            ))}
-          </select>
-        </div>
+        {showFilter("tipoSolicitud") && (
+          <div className="space-y-1">
+            <Label htmlFor="tipoSolicitud" className="text-xs">Tipo Solicitud</Label>
+            <select
+              id="tipoSolicitud"
+              value={tipoSolicitud}
+              onChange={(e) => setTipoSolicitud(e.target.value)}
+              className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            >
+              <option value="">Todos</option>
+              {options.tiposSolicitud.map((opt) => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {/* Tipo de Pedido */}
-        <div className="space-y-1">
-          <Label htmlFor="tipoPedido" className="text-xs">Tipo Pedido</Label>
-          <select
-            id="tipoPedido"
-            value={tipoPedido}
-            onChange={(e) => setTipoPedido(e.target.value)}
-            className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          >
-            <option value="">Todos</option>
-            {options.tiposPedido.map((opt) => (
-              <option key={opt} value={opt}>{opt}</option>
-            ))}
-          </select>
-        </div>
+        {showFilter("tipoPedido") && (
+          <div className="space-y-1">
+            <Label htmlFor="tipoPedido" className="text-xs">Tipo Pedido</Label>
+            <select
+              id="tipoPedido"
+              value={tipoPedido}
+              onChange={(e) => setTipoPedido(e.target.value)}
+              className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            >
+              <option value="">Todos</option>
+              {options.tiposPedido.map((opt) => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {/* Turno */}
-        <div className="space-y-1">
-          <Label htmlFor="turno" className="text-xs">Turno</Label>
-          <select
-            id="turno"
-            value={turno}
-            onChange={(e) => setTurno(e.target.value)}
-            className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          >
-            <option value="">Todos</option>
-            <option value="Mañana">Mañana</option>
-            <option value="Tarde">Tarde</option>
-            <option value="Noche">Noche</option>
-          </select>
-        </div>
+        {showFilter("turno") && (
+          <div className="space-y-1">
+            <Label htmlFor="turno" className="text-xs">Turno</Label>
+            <select
+              id="turno"
+              value={turno}
+              onChange={(e) => setTurno(e.target.value)}
+              className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            >
+              <option value="">Todos</option>
+              <option value="Mañana">Mañana</option>
+              <option value="Tarde">Tarde</option>
+              <option value="Noche">Noche</option>
+            </select>
+          </div>
+        )}
       </div>
 
       <div className="flex gap-3 justify-end pt-2 border-t">

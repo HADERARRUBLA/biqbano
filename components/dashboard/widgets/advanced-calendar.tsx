@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { useSearchParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import MonthPicker from "@/components/dashboard/month-picker"
 import ViewToggle, { ViewMode } from "@/components/dashboard/view-toggle"
@@ -161,12 +162,22 @@ export default function AdvancedCalendarWidget() {
   const [filteredData, setFilteredData] = useState<CalendarData | null>(null) // datos con filtro
   const [selectedTipos, setSelectedTipos] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
+  const searchParams = useSearchParams()
+
+  const buildUrl = useCallback((monthStr: string, tiposStr?: string) => {
+    const params = new URLSearchParams(searchParams?.toString() || "")
+    params.set("month", monthStr)
+    if (tiposStr) params.set("tipos", tiposStr)
+    params.delete("from")
+    params.delete("to")
+    return `/api/dashboard/advanced/calendar?${params.toString()}`
+  }, [searchParams])
 
   // Carga inicial
   const loadAll = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/dashboard/advanced/calendar?month=${month}`)
+      const res = await fetch(buildUrl(month))
       if (res.ok) {
         const data: CalendarData = await res.json()
         setAllData(data)
@@ -189,7 +200,7 @@ export default function AdvancedCalendarWidget() {
         // Si no se seleccionan todos, hacer fetch inicial filtrado
         if (initialTipos.length > 0 && initialTipos.length !== data.tiposDisponibles.length) {
           const q = initialTipos.map(encodeURIComponent).join(",")
-          const res2 = await fetch(`/api/dashboard/advanced/calendar?month=${month}&tipos=${q}`)
+          const res2 = await fetch(buildUrl(month, q))
           if (res2.ok) {
             const fData: CalendarData = await res2.json()
             setFilteredData({ ...fData, tiposDisponibles: data.tiposDisponibles })
@@ -219,9 +230,7 @@ export default function AdvancedCalendarWidget() {
       setLoading(true)
       try {
         const q = tipos.map(encodeURIComponent).join(",")
-        const res = await fetch(
-          `/api/dashboard/advanced/calendar?month=${month}&tipos=${q}`
-        )
+        const res = await fetch(buildUrl(month, q))
         if (res.ok) {
           const data: CalendarData = await res.json()
           // Preservar tiposDisponibles del allData
@@ -231,7 +240,7 @@ export default function AdvancedCalendarWidget() {
         setLoading(false)
       }
     },
-    [month, allData]
+    [month, allData, buildUrl]
   )
 
   const handleTipoChange = (sel: string[]) => {

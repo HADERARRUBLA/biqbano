@@ -29,6 +29,7 @@ interface Dashboard {
   name: string
   isDefault: boolean
   widgets: WidgetItem[]
+  filterConfig?: Record<string, boolean>
 }
 
 export default function CustomDashboardPage() {
@@ -339,7 +340,10 @@ export default function CustomDashboardPage() {
       </div>
 
       {/* ── Filters Bar ── */}
-      <Filters />
+      <Filters 
+        filterConfig={activeDashboard?.filterConfig} 
+        isAdmin={!isViewer} 
+      />
 
       {/* ── Main ── */}
       <div className="flex flex-1 gap-0 min-h-0">
