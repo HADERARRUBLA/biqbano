@@ -1,5 +1,3 @@
-# BIQBANO — Contexto del Proyecto
-
 ## Estado de fases
 - Fase 1: ✅ COMPLETADA — Auth + Tenant + BD
 - Fase 2: ✅ COMPLETADA — Google Sheets → PostgreSQL
@@ -8,15 +6,28 @@
 - Fase 4: ✅ COMPLETADA — Exportaciones + Dashboard Personalizable
 - Fase 5: ✅ COMPLETADA — Control de acceso por rol
 - Fase 6: ✅ COMPLETADA — 4 widgets analíticos avanzados
-- Fase 7: ✅ COMPLETADA — Cron sync automática 2am
+- Fase 7: ✅ COMPLETADA — Cron sync automática 2am Colombia
 - Fase 8: ✅ COMPLETADA — Gestión de usuarios desde UI
 - Fase 9: ✅ COMPLETADA — Filtros configurables por usuario
+- Fase 10: ✅ COMPLETADA — Fix DatePicker + Fix filtros globales
+
+## Bugs resueltos en producción
+- DatePicker: reemplazado Input Shadcn por input nativo HTML
+- Filtros globales: ahora se propagan via URL params a todos 
+  los widgets incluyendo los 4 avanzados
+- Horas AM/PM: corregido parseo en widget Distribución Horaria
+- Calendario: valores en COP abreviado ($18,6M), 
+  barras de color por tipo, defaults guardados en localStorage
+- KPI widgets: cada uno muestra una sola métrica individual
+- Grid resizable: botones 1/3, 1/2, Full en modo edición
+- Dashboard nuevo: empieza vacío sin widgets predeterminados
 
 ## Producción
 - URL: https://biqbano.vercel.app
-- GitHub: https://github.com/HADERARRUBLA/biqbano
-- BD: Supabase proyecto SitiosWEB
+- GitHub: https://github.com/HADERARRUBLA/biqbano (público)
+- BD: Supabase proyecto SitiosWEB (98,117 registros)
 - Cron: diario 7:00 UTC (2:00am Colombia), últimos 7 días
+- Datos: Enero 2026 → Junio 2026
 
 ## Reglas de desarrollo (NO romper)
 - NUNCA usar require() — solo import ES modules
@@ -26,13 +37,7 @@
 - Sync usa deleteMany por rango + createMany con skipDuplicates
 - Conexión BD: pooler puerto 5432, NO puerto 6543
 - prisma db push (NO prisma migrate dev)
-
-## Widgets avanzados funcionando
-- Calendario de calor: valores en COP, barras por tipo, 
-  defaults: Venta/Sin Respuesta/Información/PQR
-- Distribución horaria: AM/PM corregido, rango 10-22h
-- Matriz días/semana: heat map + BarChart agrupado
-- % Participación: Donut + tabla + card
+- Input de fecha: usar input HTML nativo type="date"
 
 ## Stack
 - Next.js 14 + TypeScript
@@ -41,51 +46,4 @@
 - Shadcn/ui + Recharts + Tailwind CSS
 - @hello-pangea/dnd (drag & drop)
 - xlsx + jspdf (exportaciones)
-
-## Base de datos (Supabase - proyecto SitiosWEB)
-- Prefijo de tablas: bq_
-- Tabla externa preservada: images (43 filas)
-- Tablas creadas: bq_tenants, bq_users, bq_data_sources,
-  bq_sync_logs, bq_order_records, bq_accounts,
-  bq_sessions, bq_verification_tokens
-
-## Usuarios de prueba
-- Admin: admin@demo.com / Admin1234!
-- Viewer: viewer@demo.com / Viewer1234!
-- Tenant: "Empresa Demo" (slug: demo)
-
-## Rutas principales
-- /login → autenticación
-- /dashboard/[tenant]/overview → dashboard principal
-- /admin/[tenant]/settings → configuración (solo admin)
-
-## Decisiones técnicas
-- prisma db push (no migrate dev) por tabla images existente
-- Conexión via pooler: aws-1-us-east-1.pooler.supabase.com:5432
-- @@ignore en modelo Image para preservar tabla existente
-- Sync: deleteMany(rango) + createMany(500) — NO upsert individual
-- valueRenderOption: FORMATTED_VALUE — NO UNFORMATTED_VALUE (rompe fechas)
-- $transaction prohibido para lotes grandes → usa createMany en su lugar
-
-## Data real sincronizada
-- Sheet ID: 1kTU6GtmduVlaTmixkHHqDsF0rogMfUVjNE6nYiZeCuk
-- Pestaña real: "Libro General de Ventas" (no "Sheet1")
-- Columnas: Fecha, Día, Agente, Usuario, Turno, Antes de las 12,
-  Hora, Celular, Tipo de Solicitud, PDV, Total, Tipo de Pedido
-- Primera columna (A) del Sheet es vacía — buildColMap() la ignora
-- Volumen total: ~98,118 filas
-- Registros en BD: 26,339 (enero + febrero 2026)
-
-## Métricas de sync validadas
-- Velocidad: ~63s por mes completo
-- Early stop: activa tras 3 batches vacíos consecutivos post-rango
-  (condición: batchesSinDatos >= 3 AND ultimaFechaLeida > toDate)
-- Tamaño de batch lectura: 900 filas/request (límite API: 1000)
-- Inserción: createMany en lotes de 500 registros
-- Volumen probado: 26,339 registros (enero + febrero 2026)
-- Enero: 13,595 filas | Febrero: 12,744 filas
-- Ventas totales acumuladas: $721,597,579
-
-## Optimización pendiente (post-MVP)
-- Binary search para saltar al primer batch del rango (evitar leer meses
-  anteriores al rango solicitado — actualmente lee desde la fila 1)
+- googleapis (Google Sheets API)
