@@ -8,19 +8,36 @@ import prisma from "@/lib/prisma"
  */
 function parseHora(horaStr: string | null | undefined): number | null {
   if (!horaStr) return null
-  const s = horaStr.trim().toLowerCase()
-
-  // Formato: "7:00 a.m." | "12:00 p.m." | "7:00 am" | "14:00"
-  const match = s.match(/^(\d{1,2}):(\d{2})\s*(a\.?m\.?|p\.?m\.?)?/)
+  
+  const str = horaStr.toLowerCase().trim()
+  
+  // Detectar AM/PM
+  const isAM = str.includes('a.m.') || str.includes('am')
+  const isPM = str.includes('p.m.') || str.includes('pm')
+  
+  // Extraer número de hora
+  const match = str.match(/(\d+):?(\d*)/)
   if (!match) return null
+  
+  let hour = parseInt(match[1])
+  
+  // Convertir a formato 24 horas
+  if (isPM && hour !== 12) {
+    hour += 12  // 6:00 p.m. → 18, 7:00 p.m. → 19
+  } else if (isAM && hour === 12) {
+    hour = 0    // 12:00 a.m. → 0 (medianoche)
+  }
+  // 12:00 p.m. → 12 (mediodía, correcto)
+  // 11:00 a.m. → 11 (correcto)
+  
+  return hour
+}
 
-  let hours = parseInt(match[1], 10)
-  const period = match[3]?.replace(/\./g, "")
-
-  if (period === "pm" && hours !== 12) hours += 12
-  if (period === "am" && hours === 12) hours = 0
-
-  return hours >= 0 && hours <= 23 ? hours : null
+function formatHoraLabel(hour: number): string {
+  if (hour === 0) return '12:00 am'
+  if (hour === 12) return '12:00 pm'
+  if (hour < 12) return `${hour}:00 am`
+  return `${hour - 12}:00 pm`
 }
 
 export async function GET(req: Request) {
@@ -84,11 +101,11 @@ export async function GET(req: Request) {
         tipos[tipo] = hourlyMap[hour]?.[tipo] || 0
       }
       const total = Object.values(tipos).reduce((a, b) => a + b, 0)
-      return { hora: hour, label: `${hour.toString().padStart(2, "0")}:00`, total, ...tipos }
+      return { hora: hour, label: formatHoraLabel(hour), total, ...tipos }
     })
 
-    // Filtrar horas con actividad (opcional: retornar todas de 6 a 21)
-    const hourlyFiltered = hourly.filter((h) => h.hora >= 6 && h.hora <= 22)
+    // Filtra solo horas entre 10 y 22 (10am a 10pm). Si hay datos fuera de ese rango, inclúyelos
+    const hourlyFiltered = hourly.filter((h) => (h.hora >= 10 && h.hora <= 22) || h.total > 0)
 
     return NextResponse.json({ hourly: hourlyFiltered, tiposDisponibles })
   } catch (error: any) {
