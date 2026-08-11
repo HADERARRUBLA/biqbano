@@ -3,34 +3,31 @@ import { auth } from "@/lib/auth"
 import prisma from "@/lib/prisma"
 
 /**
- * Parsea la columna "hora" del Sheet que viene como "7:00 a.m." o "12:00 p.m."
+ * Parsea la columna "hora" del Sheet que viene como "7:00 a.m." o "12:00 p.m." o "18:00"
  * Retorna la hora en formato 24h (0-23) o null si no se puede parsear.
  */
 function parseHora(horaStr: string | null | undefined): number | null {
   if (!horaStr) return null
-  
   const str = horaStr.toLowerCase().trim()
   
-  // Detectar AM/PM
-  const isAM = str.includes('a.m.') || str.includes('am')
-  const isPM = str.includes('p.m.') || str.includes('pm')
+  // Formato 24h: "18:00" o "18"
+  if (/^\d{1,2}:\d{2}$/.test(str)) {
+    const hour = parseInt(str.split(':')[0])
+    return hour >= 0 && hour <= 23 ? hour : null
+  }
   
-  // Extraer número de hora
-  const match = str.match(/(\d+):?(\d*)/)
+  const isPM = str.includes('p.m') || str.includes('pm')
+  const isAM = str.includes('a.m') || str.includes('am')
+  
+  const match = str.match(/(\d{1,2})/)
   if (!match) return null
   
   let hour = parseInt(match[1])
   
-  // Convertir a formato 24 horas
-  if (isPM && hour !== 12) {
-    hour += 12  // 6:00 p.m. → 18, 7:00 p.m. → 19
-  } else if (isAM && hour === 12) {
-    hour = 0    // 12:00 a.m. → 0 (medianoche)
-  }
-  // 12:00 p.m. → 12 (mediodía, correcto)
-  // 11:00 a.m. → 11 (correcto)
+  if (isPM && hour !== 12) hour += 12
+  else if (isAM && hour === 12) hour = 0
   
-  return hour
+  return hour >= 0 && hour <= 23 ? hour : null
 }
 
 function formatHoraLabel(hour: number): string {

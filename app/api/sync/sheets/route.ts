@@ -3,24 +3,31 @@ import { auth } from "@/lib/auth"
 import prisma from "@/lib/prisma"
 import { google } from "googleapis"
 
-// ── Parsear fecha DD/MM/YYYY o YYYY-MM-DD ────────────────────────────────────
-function parseSheetDate(val: string): Date | null {
-  if (!val) return null
-  const clean = String(val).trim()
-  if (clean.includes("/")) {
-    const parts = clean.split("/")
-    if (parts.length === 3 && parts[2].length === 4) {
-      const d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]))
-      return isNaN(d.getTime()) ? null : d
-    }
+// ── Parsear fecha flexible para API y CSV fallback ─────────────────────────────
+function parseFlexibleDate(dateStr: string): Date | null {
+  if (!dateStr) return null
+  const str = dateStr.trim()
+  
+  // Formato YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+    const d = new Date(str)
+    return isNaN(d.getTime()) ? null : d
   }
-  if (clean.includes("-")) {
-    const parts = clean.split("-")
-    if (parts[0].length === 4) {
-      const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]))
-      return isNaN(d.getTime()) ? null : d
-    }
+  
+  // Formato DD/MM/YYYY o D/M/YYYY
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}/.test(str)) {
+    const [day, month, year] = str.split('/')
+    const d = new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
+    return isNaN(d.getTime()) ? null : d
   }
+  
+  // Formato DD-MM-YYYY
+  if (/^\d{1,2}-\d{1,2}-\d{4}/.test(str)) {
+    const [day, month, year] = str.split('-')
+    const d = new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
+    return isNaN(d.getTime()) ? null : d
+  }
+  
   return null
 }
 
@@ -89,7 +96,7 @@ function buildRecord(
   tenantId: string
 ) {
   const fechaRaw     = getVal(row, colMap, "fecha")
-  const parsedDate   = parseSheetDate(fechaRaw ?? "")
+  const parsedDate   = parseFlexibleDate(fechaRaw ?? "")
   const agente       = getVal(row, colMap, "agente")
   const pdv          = getVal(row, colMap, "pdv")
   const tipoSolicitud = getVal(row, colMap, "tipoSolicitud")
@@ -224,6 +231,7 @@ export async function POST(req: Request) {
     let allInRange: ReturnType<typeof buildRecord>[] = []
 
     try {
+      console.log('[SYNC] Intentando Google Sheets API...')
       const sheets = google.sheets({ version: "v4", auth: apiKey })
 
       while (hasMore) {
@@ -250,7 +258,7 @@ export async function POST(req: Request) {
           for (let i = 1; i < values.length; i++) {
             const row = (values[i] as any[]).map(String)
             const fechaRaw = getVal(row, colMap, "fecha")
-            const d = parseSheetDate(fechaRaw ?? "")
+            const d = parseFlexibleDate(fechaRaw ?? "")
             if (d) ultimaFechaLeida = d  // registrar siempre la última fecha válida
             if (d && d >= fromDate && d <= toDate) {
               allInRange.push(buildRecord(row, startRow + i, colMap, tenantId))
@@ -260,7 +268,7 @@ export async function POST(req: Request) {
           for (let i = 0; i < values.length; i++) {
             const row = (values[i] as any[]).map(String)
             const fechaRaw = getVal(row, colMap, "fecha")
-            const d = parseSheetDate(fechaRaw ?? "")
+            const d = parseFlexibleDate(fechaRaw ?? "")
             if (d) ultimaFechaLeida = d  // registrar siempre la última fecha válida
             if (d && d >= fromDate && d <= toDate) {
               allInRange.push(buildRecord(row, startRow + i, colMap, tenantId))
@@ -292,7 +300,8 @@ export async function POST(req: Request) {
         }
       }
     } catch (apiError: any) {
-      console.warn("Sheets API falló, usando CSV fallback:", apiError.message)
+      console.error('[SYNC] API falló, razón:', apiError.message)
+      console.log('[SYNC] Activando CSV fallback...')
       useApiMode = false
     }
 
@@ -312,7 +321,7 @@ export async function POST(req: Request) {
         if (!lines[i].trim()) continue
         const row = parseCSVLine(lines[i])
         const fechaRaw = getVal(row, colMap, "fecha")
-        const d = parseSheetDate(fechaRaw ?? "")
+        const d = parseFlexibleDate(fechaRaw ?? "")
         if (d && d >= fromDate && d <= toDate) {
           allInRange.push(buildRecord(row, i + 1, colMap, tenantId))
         }
