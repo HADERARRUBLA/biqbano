@@ -121,6 +121,8 @@ export async function GET(req: Request) {
 
     // Filtra solo horas entre 10 y 22 (10am a 10pm). Si hay datos fuera de ese rango, inclúyelos
     const hourlyFiltered = hourly.filter((h) => (h.hora >= 10 && h.hora <= 22) || h.total > 0)
+    
+    console.log('[HOURLY API] datos:', JSON.stringify(hourlyFiltered.slice(0, 5)))
 
     return NextResponse.json({ hourly: hourlyFiltered, tiposDisponibles })
   } catch (error: any) {

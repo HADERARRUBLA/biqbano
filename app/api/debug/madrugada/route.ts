@@ -22,7 +22,8 @@ export async function GET(request: Request) {
   
   // Filtrar los que tienen hora de madrugada
   const madrugada = registros.filter((r: any) => {
-    const hora = (r.baseData as any)?.hora
+    const baseData = r.baseData as Record<string, any>
+    const hora = baseData?.["Hora"] ?? baseData?.["hora"] ?? baseData?.["HORA"] ?? baseData?.["hora_solicitud"]
     if (!hora) return false
     const h = parseInt(hora.split(':')[0])
     return h >= 1 && h <= 10
