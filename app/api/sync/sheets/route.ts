@@ -64,19 +64,34 @@ function buildColMap(headers: string[]): Record<string, number> {
   headers.forEach((h, idx) => {
     const norm = normalizeHeader(h)
     if (!norm) return
-    if (norm === "fecha")                     colMap.fecha = idx
-    else if (norm === "dia")                  colMap.dia = idx
-    else if (norm === "agente")               colMap.agente = idx
-    else if (norm === "usuario")              colMap.usuario = idx
-    else if (norm === "turno")                colMap.turno = idx
+    if (norm.includes("fecha"))               colMap.fecha = idx
+    else if (norm.includes("dia"))            colMap.dia = idx
+    else if (norm.includes("agente"))         colMap.agente = idx
+    else if (norm.includes("usuario"))        colMap.usuario = idx
+    else if (norm.includes("turno"))          colMap.turno = idx
     else if (norm.includes("antesdelas12"))   colMap.antesDeLas12 = idx
-    else if (norm === "hora")                 colMap.hora = idx
-    else if (norm === "celular")              colMap.celular = idx
+    else if (norm.includes("hora"))           colMap.hora = idx
+    else if (norm.includes("celular"))        colMap.celular = idx
     else if (norm.includes("tipodesolicitud")) colMap.tipoSolicitud = idx
-    else if (norm === "pdv")                  colMap.pdv = idx
-    else if (norm === "total")                colMap.total = idx
+    else if (norm.includes("pdv"))            colMap.pdv = idx
+    else if (norm.includes("total"))          colMap.total = idx
     else if (norm.includes("tipodepedido"))   colMap.tipoPedido = idx
   })
+
+  // Fallback garantizado a los índices correctos si por algún motivo el nombre falla o viene vacío
+  if (colMap.fecha === undefined) colMap.fecha = 1
+  if (colMap.dia === undefined) colMap.dia = 2
+  if (colMap.agente === undefined) colMap.agente = 3
+  if (colMap.usuario === undefined) colMap.usuario = 4
+  if (colMap.turno === undefined) colMap.turno = 5
+  if (colMap.antesDeLas12 === undefined) colMap.antesDeLas12 = 6
+  if (colMap.hora === undefined) colMap.hora = 7
+  if (colMap.celular === undefined) colMap.celular = 8
+  if (colMap.tipoSolicitud === undefined) colMap.tipoSolicitud = 9
+  if (colMap.pdv === undefined) colMap.pdv = 10
+  if (colMap.total === undefined) colMap.total = 11
+  if (colMap.tipoPedido === undefined) colMap.tipoPedido = 12
+
   return colMap
 }
 

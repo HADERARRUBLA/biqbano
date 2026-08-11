@@ -55,8 +55,14 @@ export async function GET(req: Request) {
       const horaParsed = parseHora(horaRaw)
       return {
         id: r.id,
+        identificador: {
+          fecha: r.fecha,
+          agente: r.agente,
+          pdv: r.pdv
+        },
         horaRaw,
-        horaParsed
+        horaParsed,
+        baseData
       }
     })
 
