@@ -51,82 +51,51 @@ function parseCSVLine(line: string): string[] {
   return result
 }
 
-// ── Normalizar header para comparación sin tildes/espacios ───────────────────
-function normalizeHeader(h: string): string {
-  return h.toLowerCase().trim()
-    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-    .replace(/[\s_]+/g, "")
+// MAPEO FIJO para CSV fallback y API
+const FIXED_COL_MAP = {
+  fecha: 1,
+  dia: 2,
+  agente: 3,
+  usuario: 4,
+  turno: 5,
+  antesDeLas12: 6,
+  hora: 7,
+  celular: 8,
+  tipoSolicitud: 9,
+  pdv: 10,
+  total: 11,
+  tipoPedido: 12
 }
 
-// ── Mapear índices desde array de headers ─────────────────────────────────────
-function buildColMap(headers: string[]): Record<string, number> {
-  const colMap: Record<string, number> = {}
-  headers.forEach((h, idx) => {
-    const norm = normalizeHeader(h)
-    if (!norm) return
-    if (norm.includes("fecha"))               colMap.fecha = idx
-    else if (norm.includes("dia"))            colMap.dia = idx
-    else if (norm.includes("agente"))         colMap.agente = idx
-    else if (norm.includes("usuario"))        colMap.usuario = idx
-    else if (norm.includes("turno"))          colMap.turno = idx
-    else if (norm.includes("antesdelas12"))   colMap.antesDeLas12 = idx
-    else if (norm.includes("hora"))           colMap.hora = idx
-    else if (norm.includes("celular"))        colMap.celular = idx
-    else if (norm.includes("tipodesolicitud")) colMap.tipoSolicitud = idx
-    else if (norm.includes("pdv"))            colMap.pdv = idx
-    else if (norm.includes("total"))          colMap.total = idx
-    else if (norm.includes("tipodepedido"))   colMap.tipoPedido = idx
-  })
-
-  // Fallback garantizado a los índices correctos si por algún motivo el nombre falla o viene vacío
-  if (colMap.fecha === undefined) colMap.fecha = 1
-  if (colMap.dia === undefined) colMap.dia = 2
-  if (colMap.agente === undefined) colMap.agente = 3
-  if (colMap.usuario === undefined) colMap.usuario = 4
-  if (colMap.turno === undefined) colMap.turno = 5
-  if (colMap.antesDeLas12 === undefined) colMap.antesDeLas12 = 6
-  if (colMap.hora === undefined) colMap.hora = 7
-  if (colMap.celular === undefined) colMap.celular = 8
-  if (colMap.tipoSolicitud === undefined) colMap.tipoSolicitud = 9
-  if (colMap.pdv === undefined) colMap.pdv = 10
-  if (colMap.total === undefined) colMap.total = 11
-  if (colMap.tipoPedido === undefined) colMap.tipoPedido = 12
-
-  return colMap
-}
-
-// ── Extraer valor de celda de forma segura ────────────────────────────────────
-function getVal(row: string[], colMap: Record<string, number>, key: string): string | null {
-  const idx = colMap[key]
-  if (idx === undefined || idx >= row.length) return null
-  const v = String(row[idx] ?? "").trim()
-  return v || null
+// Función para obtener valor por índice fijo
+function getValByIndex(row: string[], idx: number): string {
+  const val = row[idx]
+  return val ? val.trim() : ''
 }
 
 // ── Construir registro para insertar ─────────────────────────────────────────
 function buildRecord(
   row: string[],
   rowIndex: number,
-  colMap: Record<string, number>,
   tenantId: string
 ) {
-  const fechaRaw     = getVal(row, colMap, "fecha")
-  const parsedDate   = parseFlexibleDate(fechaRaw ?? "")
-  const agente       = getVal(row, colMap, "agente")
-  const pdv          = getVal(row, colMap, "pdv")
-  const tipoSolicitud = getVal(row, colMap, "tipoSolicitud")
-  const tipoPedido   = getVal(row, colMap, "tipoPedido")
-  const turno        = getVal(row, colMap, "turno")
-  const horaRaw      = getVal(row, colMap, "hora")
+  const fechaRaw     = getValByIndex(row, 1)
+  const parsedDate   = parseFlexibleDate(fechaRaw)
+  const agente       = getValByIndex(row, 3) || null
+  const pdv          = getValByIndex(row, 10) || null
+  const tipoSolicitud = getValByIndex(row, 9) || null
+  const tipoPedido   = getValByIndex(row, 12) || null
+  const turno        = getValByIndex(row, 5) || null
+  const horaRaw      = getValByIndex(row, 7)
   
   if (horaRaw) {
     console.log('[HORA RAW]', horaRaw)
   }
 
-  const totalRaw = getVal(row, colMap, "total")
+  const totalRaw = getValByIndex(row, 11)
   let parsedTotal: number | null = null
   if (totalRaw) {
-    const cleanNum = totalRaw.replace(/[$,.]/g, "").trim()
+    const cleanNum = totalRaw.replace(/[^0-9.-]/g, "").trim()
     const parsed = parseFloat(cleanNum)
     parsedTotal = !isNaN(parsed) ? parsed : null
   }
@@ -142,18 +111,18 @@ function buildRecord(
     turno,
     total: parsedTotal,
     baseData: {
-      fecha: fechaRaw,
-      dia: getVal(row, colMap, "dia"),
-      agente,
-      usuario: getVal(row, colMap, "usuario"),
-      turno,
-      antesDeLas12: getVal(row, colMap, "antesDeLas12"),
-      hora: getVal(row, colMap, "hora"),
-      celular: getVal(row, colMap, "celular"),
-      tipoSolicitud,
-      pdv,
-      total: totalRaw,
-      tipoPedido,
+      fecha: getValByIndex(row, 1),
+      dia: getValByIndex(row, 2),
+      agente: getValByIndex(row, 3),
+      usuario: getValByIndex(row, 4),
+      turno: getValByIndex(row, 5),
+      antesDeLas12: getValByIndex(row, 6),
+      hora: getValByIndex(row, 7),
+      celular: getValByIndex(row, 8),
+      tipoSolicitud: getValByIndex(row, 9),
+      pdv: getValByIndex(row, 10),
+      total: getValByIndex(row, 11),
+      tipoPedido: getValByIndex(row, 12),
     } as any,
     extraData: {} as any,
     syncedAt: new Date(),
@@ -237,8 +206,6 @@ export async function POST(req: Request) {
     const PAGE_SIZE = 900
     const INSERT_BATCH = 500
 
-    let colMap: Record<string, number> = {}
-    let headersRead = false
     let startRow = 1
     let totalRowsSynced = 0
     let hasMore = true
@@ -269,30 +236,14 @@ export async function POST(req: Request) {
 
         const prevInRange = allInRange.length
 
-        if (!headersRead) {
-          colMap = buildColMap((values[0] as any[]).map(String))
-          if (colMap.fecha === undefined) {
-            throw new Error("No se encontró la columna 'Fecha' en el Sheet")
-          }
-          headersRead = true
-          for (let i = 1; i < values.length; i++) {
-            const row = (values[i] as any[]).map(String)
-            const fechaRaw = getVal(row, colMap, "fecha")
-            const d = parseFlexibleDate(fechaRaw ?? "")
-            if (d) ultimaFechaLeida = d  // registrar siempre la última fecha válida
-            if (d && d >= fromDate && d <= toDate) {
-              allInRange.push(buildRecord(row, startRow + i, colMap, tenantId))
-            }
-          }
-        } else {
-          for (let i = 0; i < values.length; i++) {
-            const row = (values[i] as any[]).map(String)
-            const fechaRaw = getVal(row, colMap, "fecha")
-            const d = parseFlexibleDate(fechaRaw ?? "")
-            if (d) ultimaFechaLeida = d  // registrar siempre la última fecha válida
-            if (d && d >= fromDate && d <= toDate) {
-              allInRange.push(buildRecord(row, startRow + i, colMap, tenantId))
-            }
+        const startIndex = (startRow === 1) ? 1 : 0
+        for (let i = startIndex; i < values.length; i++) {
+          const row = (values[i] as any[]).map(String)
+          const fechaRaw = getValByIndex(row, 1)
+          const d = parseFlexibleDate(fechaRaw)
+          if (d) ultimaFechaLeida = d
+          if (d && d >= fromDate && d <= toDate) {
+            allInRange.push(buildRecord(row, startRow + i, tenantId))
           }
         }
 
@@ -334,16 +285,13 @@ export async function POST(req: Request) {
       const lines = (await csvRes.text()).split(/\r?\n/)
       if (lines.length === 0) throw new Error("CSV vacío")
 
-      colMap = buildColMap(parseCSVLine(lines[0]))
-      if (colMap.fecha === undefined) throw new Error("Columna Fecha no encontrada en CSV")
-
       for (let i = 1; i < lines.length; i++) {
         if (!lines[i].trim()) continue
         const row = parseCSVLine(lines[i])
-        const fechaRaw = getVal(row, colMap, "fecha")
-        const d = parseFlexibleDate(fechaRaw ?? "")
+        const fechaRaw = getValByIndex(row, 1)
+        const d = parseFlexibleDate(fechaRaw)
         if (d && d >= fromDate && d <= toDate) {
-          allInRange.push(buildRecord(row, i + 1, colMap, tenantId))
+          allInRange.push(buildRecord(row, i + 1, tenantId))
         }
       }
     }
