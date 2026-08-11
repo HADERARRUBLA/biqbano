@@ -102,6 +102,11 @@ function buildRecord(
   const tipoSolicitud = getVal(row, colMap, "tipoSolicitud")
   const tipoPedido   = getVal(row, colMap, "tipoPedido")
   const turno        = getVal(row, colMap, "turno")
+  const horaRaw      = getVal(row, colMap, "hora")
+  
+  if (horaRaw) {
+    console.log('[HORA RAW]', horaRaw)
+  }
 
   const totalRaw = getVal(row, colMap, "total")
   let parsedTotal: number | null = null

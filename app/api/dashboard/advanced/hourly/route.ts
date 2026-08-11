@@ -8,7 +8,12 @@ import prisma from "@/lib/prisma"
  */
 function parseHora(horaStr: string | null | undefined): number | null {
   if (!horaStr) return null
-  const str = horaStr.toLowerCase().trim()
+  
+  // Limpiar formato "12:00: p.m." → "12:00 p.m."
+  // Remover los dos puntos extra antes del espacio o am/pm
+  let str = horaStr.toLowerCase().trim()
+  str = str.replace(/:\s*(a\.m\.|p\.m\.|am|pm)/g, ' $1')
+  str = str.replace(/:\s+/g, ' ').trim()
   
   // Formato 24h: "18:00" o "18"
   if (/^\d{1,2}:\d{2}$/.test(str)) {
