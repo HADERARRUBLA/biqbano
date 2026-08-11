@@ -5,34 +5,29 @@ export const dynamic = 'force-dynamic'
 
 function parseHora(horaStr: string | null | undefined): number | null {
   if (!horaStr) return null
+  const str = horaStr.toLowerCase().trim()
   
-  // Normalizar: quitar puntos extra, espacios, 
-  // convertir a minúsculas
-  let str = horaStr.toLowerCase().trim()
+  // Formato normalizado 24h: "18:00", "12:00"
+  if (/^\d{1,2}:\d{2}$/.test(str)) {
+    const hour = parseInt(str.split(':')[0])
+    return hour >= 0 && hour <= 23 ? hour : null
+  }
   
-  // Quitar doble punto antes de am/pm: "12:00: p.m." → "12:00 p.m."
-  str = str.replace(/:(\s*)(a\.?m\.?|p\.?m\.?)/gi, ' $2')
+  // Formato antiguo con am/pm (datos históricos)
+  let s = str.replace(/:(\s*)(a\.?m\.?|p\.?m\.?)/gi, ' $2')
+  s = s.replace(/a\.m\.?/g, 'am').replace(/p\.m\.?/g, 'pm')
+  s = s.replace(/\s+/g, ' ').trim()
   
-  // Normalizar am/pm a formato simple
-  str = str.replace(/a\.m\.?/g, 'am').replace(/p\.m\.?/g, 'pm')
-  
-  // Quitar espacios extra
-  str = str.replace(/\s+/g, ' ').trim()
-  
-  // Ahora el formato es: "12:00 pm", "3:00 pm", "7:00 am"
-  const isPM = str.includes('pm')
-  const isAM = str.includes('am')
-  
-  const match = str.match(/^(\d{1,2})/)
+  const isPM = s.includes('pm')
+  const isAM = s.includes('am')
+  const match = s.match(/^(\d{1,2})/)
   if (!match) return null
   
   let hour = parseInt(match[1])
-  
   if (isPM && hour !== 12) hour += 12
   else if (isAM && hour === 12) hour = 0
   
-  if (hour < 0 || hour > 23) return null
-  return hour
+  return hour >= 0 && hour <= 23 ? hour : null
 }
 
 export async function GET() {

@@ -31,6 +31,32 @@ function parseFlexibleDate(dateStr: string): Date | null {
   return null
 }
 
+function normalizeHora(horaStr: string): string {
+  if (!horaStr) return ''
+  
+  let str = horaStr.toLowerCase().trim()
+  
+  // Quitar doble punto: "12:00: p.m." → "12:00 p.m."
+  str = str.replace(/:(\s*)(a\.?m\.?|p\.?m\.?)/gi, ' $2')
+  
+  // Normalizar am/pm
+  str = str.replace(/a\.m\.?/g, 'am').replace(/p\.m\.?/g, 'pm')
+  str = str.replace(/\s+/g, ' ').trim()
+  
+  // Extraer hora y convertir a 24h
+  const isPM = str.includes('pm')
+  const isAM = str.includes('am')
+  const match = str.match(/^(\d{1,2})/)
+  if (!match) return horaStr // retornar original si no parsea
+  
+  let hour = parseInt(match[1])
+  if (isPM && hour !== 12) hour += 12
+  else if (isAM && hour === 12) hour = 0
+  
+  // Retornar formato estándar "HH:00"
+  return `${hour.toString().padStart(2, '0')}:00`
+}
+
 // ── Parsear CSV con soporte a comillas ────────────────────────────────────────
 function parseCSVLine(line: string): string[] {
   const result: string[] = []
@@ -87,9 +113,10 @@ function buildRecord(
   const tipoPedido   = getValByIndex(row, 12) || null
   const turno        = getValByIndex(row, 5) || null
   const horaRaw      = getValByIndex(row, 7)
+  const hora         = normalizeHora(horaRaw)
   
   if (horaRaw) {
-    console.log('[HORA RAW]', horaRaw)
+    console.log('[HORA RAW]', horaRaw, '->', hora)
   }
 
   const totalRaw = getValByIndex(row, 11)
@@ -117,7 +144,7 @@ function buildRecord(
       usuario: getValByIndex(row, 4),
       turno: getValByIndex(row, 5),
       antesDeLas12: getValByIndex(row, 6),
-      hora: getValByIndex(row, 7),
+      hora: hora,
       celular: getValByIndex(row, 8),
       tipoSolicitud: getValByIndex(row, 9),
       pdv: getValByIndex(row, 10),
