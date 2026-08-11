@@ -9,22 +9,24 @@ import prisma from "@/lib/prisma"
 function parseHora(horaStr: string | null | undefined): number | null {
   if (!horaStr) return null
   
-  // Limpiar formato "12:00: p.m." → "12:00 p.m."
-  // Remover los dos puntos extra antes del espacio o am/pm
+  // Normalizar: quitar puntos extra, espacios, 
+  // convertir a minúsculas
   let str = horaStr.toLowerCase().trim()
-  str = str.replace(/:\s*(a\.m\.|p\.m\.|am|pm)/g, ' $1')
-  str = str.replace(/:\s+/g, ' ').trim()
   
-  // Formato 24h: "18:00" o "18"
-  if (/^\d{1,2}:\d{2}$/.test(str)) {
-    const hour = parseInt(str.split(':')[0])
-    return hour >= 0 && hour <= 23 ? hour : null
-  }
+  // Quitar doble punto antes de am/pm: "12:00: p.m." → "12:00 p.m."
+  str = str.replace(/:(\s*)(a\.?m\.?|p\.?m\.?)/gi, ' $2')
   
-  const isPM = str.includes('p.m') || str.includes('pm')
-  const isAM = str.includes('a.m') || str.includes('am')
+  // Normalizar am/pm a formato simple
+  str = str.replace(/a\.m\.?/g, 'am').replace(/p\.m\.?/g, 'pm')
   
-  const match = str.match(/(\d{1,2})/)
+  // Quitar espacios extra
+  str = str.replace(/\s+/g, ' ').trim()
+  
+  // Ahora el formato es: "12:00 pm", "3:00 pm", "7:00 am"
+  const isPM = str.includes('pm')
+  const isAM = str.includes('am')
+  
+  const match = str.match(/^(\d{1,2})/)
   if (!match) return null
   
   let hour = parseInt(match[1])
@@ -32,7 +34,8 @@ function parseHora(horaStr: string | null | undefined): number | null {
   if (isPM && hour !== 12) hour += 12
   else if (isAM && hour === 12) hour = 0
   
-  return hour >= 0 && hour <= 23 ? hour : null
+  if (hour < 0 || hour > 23) return null
+  return hour
 }
 
 function formatHoraLabel(hour: number): string {
