@@ -217,6 +217,12 @@ export async function POST(req: Request) {
     let useApiMode = true
     let allInRange: ReturnType<typeof buildRecord>[] = []
 
+    console.log('[SYNC] API Key disponible:', 
+      !!process.env.GOOGLE_SHEETS_API_KEY,
+      'Primeros 8 chars:', 
+      process.env.GOOGLE_SHEETS_API_KEY?.substring(0, 8)
+    )
+
     try {
       console.log('[SYNC] Intentando Google Sheets API...')
       const sheets = google.sheets({ version: "v4", auth: apiKey })
@@ -271,6 +277,7 @@ export async function POST(req: Request) {
         }
       }
     } catch (apiError: any) {
+      console.error('[SYNC] Error API completo:', apiError)
       console.error('[SYNC] API falló, razón:', apiError.message)
       console.log('[SYNC] Activando CSV fallback...')
       useApiMode = false
