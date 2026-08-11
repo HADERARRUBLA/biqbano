@@ -184,6 +184,7 @@ export default function AdvancedHourlyWidget() {
           <XAxis
             dataKey="hora"
             type="category"
+            allowDuplicatedCategory={false}
             tick={{ fontSize: 9 }}
             tickFormatter={(val) => {
               const h = parseInt(val)
