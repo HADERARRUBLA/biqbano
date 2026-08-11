@@ -170,7 +170,9 @@ export default function AdvancedHourlyWidget() {
 
   // ── Vista: Gráfica — Stacked Bar filtrado ────────────────────────────────
   const renderChart = () => {
-    const chartData = filteredHourly.filter(d => d.total > 0)
+    const chartData = filteredHourly
+      .filter(d => d.total > 0)
+      .map(d => ({ ...d, horaLabel: d.label }))
     
     if (!chartData.length) return <div className="text-center text-sm text-gray-400 py-6">Sin datos</div>
 
@@ -182,18 +184,9 @@ export default function AdvancedHourlyWidget() {
           barSize={14}
         >
           <XAxis
-            dataKey="hora"
+            dataKey="horaLabel"
             type="category"
-            allowDuplicatedCategory={false}
             tick={{ fontSize: 9 }}
-            tickFormatter={(val) => {
-              const h = parseInt(val)
-              if (isNaN(h)) return val
-              if (h === 0) return '12 am'
-              if (h === 12) return '12 pm'
-              if (h < 12) return `${h} am`
-              return `${h - 12} pm`
-            }}
           />
           <YAxis tick={{ fontSize: 9 }} allowDecimals={false} />
           <Tooltip
