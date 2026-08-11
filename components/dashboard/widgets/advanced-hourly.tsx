@@ -185,7 +185,14 @@ export default function AdvancedHourlyWidget() {
             dataKey="hora"
             type="category"
             tick={{ fontSize: 9 }}
-            tickFormatter={(val) => val}
+            tickFormatter={(val) => {
+              const h = parseInt(val)
+              if (isNaN(h)) return val
+              if (h === 0) return '12 am'
+              if (h === 12) return '12 pm'
+              if (h < 12) return `${h} am`
+              return `${h - 12} pm`
+            }}
           />
           <YAxis tick={{ fontSize: 9 }} allowDecimals={false} />
           <Tooltip
