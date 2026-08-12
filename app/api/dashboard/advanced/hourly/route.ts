@@ -12,7 +12,8 @@ function parseHora(horaStr: string | null | undefined): number | null {
   
   // Formato normalizado 24h: "18:00", "12:00"
   if (/^\d{1,2}:\d{2}$/.test(str)) {
-    const hour = parseInt(str.split(':')[0])
+    let hour = parseInt(str.split(':')[0])
+    if (hour >= 1 && hour <= 10) hour += 12
     return hour >= 0 && hour <= 23 ? hour : null
   }
   
@@ -29,6 +30,9 @@ function parseHora(horaStr: string | null | undefined): number | null {
   let hour = parseInt(match[1])
   if (isPM && hour !== 12) hour += 12
   else if (isAM && hour === 12) hour = 0
+  else if (!isPM && !isAM) {
+    if (hour >= 1 && hour <= 10) hour += 12
+  }
   
   return hour >= 0 && hour <= 23 ? hour : null
 }

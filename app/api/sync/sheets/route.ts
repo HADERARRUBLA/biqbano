@@ -52,6 +52,11 @@ function normalizeHora(horaStr: string): string {
   let hour = parseInt(match[1])
   if (isPM && hour !== 12) hour += 12
   else if (isAM && hour === 12) hour = 0
+  else if (!isPM && !isAM) {
+    // Sin indicador — aplicar regla de negocio
+    // Tiendas operan 11am-10pm, nunca hay actividad 1am-10am
+    if (hour >= 1 && hour <= 10) hour += 12  // asumir PM
+  }
   
   // Retornar formato estándar "HH:00"
   return `${hour.toString().padStart(2, '0')}:00`
